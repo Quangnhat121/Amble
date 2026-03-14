@@ -1,6 +1,6 @@
 const jwt = require("jsonwebtoken");
 const Partner = require("../models/partner");
-const Restaurant = require("../models/Restaurant");
+const Restaurant = require("../models/restaurant");
 
 const signToken = (id, type = "partner") => {
   return jwt.sign({ id, type }, process.env.JWT_SECRET, {
@@ -133,7 +133,19 @@ exports.login = async (req, res) => {
       .json({ success: false, message: "Lỗi máy chủ. Vui lòng thử lại." });
   }
 };
-
+exports.logout = async (req, res) => {
+  try {
+    return res.status(200).json({
+      success: true,
+      message: "Đăng xuất thành công"
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Lỗi máy chủ"
+    });
+  }
+};
 // Get current partner
 exports.getMe = async (req, res) => {
   try {

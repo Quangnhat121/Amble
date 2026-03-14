@@ -1,4 +1,4 @@
-const Restaurant = require('../models/Restaurant');
+const Restaurant = require('../models/restaurant');
 
 // GET /api/restaurants/featured
 exports.getFeatured = async (req, res) => {
@@ -19,7 +19,24 @@ exports.getAll = async (req, res) => {
     const { city, cuisine, category, search, priceRange } = req.query;
     const filter = { isActive: true };
 
-    if (city)       filter.city       = new RegExp(city, 'i');
+    if (city) {
+      // Normalize city aliases: Ho Chi Minh / HCM / Sai Gon / TP.HCM → match any
+      const hcmAliases = ['ho chi minh', 'hcm', 'sai gon', 'saigon', 'tp.hcm', 'tphcm', 'hồ chí minh'];
+      const isHCM = hcmAliases.some(a => city.toLowerCase().includes(a));
+      if (isHCM) {
+        filter.$or = [
+          { city: new RegExp('ho chi minh', 'i') },
+          { city: new RegExp('hcm', 'i') },
+          { city: new RegExp('sai gon', 'i') },
+          { city: new RegExp('saigon', 'i') },
+          { city: new RegExp('tp.hcm', 'i') },
+          { city: new RegExp('hồ chí minh', 'i') },
+          { city: new RegExp('tp hcm', 'i') },
+        ];
+      } else {
+        filter.city = new RegExp(city, 'i');
+      }
+    }
     if (cuisine)    filter.cuisine    = new RegExp(cuisine, 'i');
     if (category)   filter.categories = category;
     if (priceRange) filter.priceRange = priceRange;

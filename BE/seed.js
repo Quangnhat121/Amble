@@ -7,9 +7,9 @@
 
 require('dotenv').config();
 const mongoose = require('mongoose');
-const User = require('./models/User');
+const User = require('./models/user');
 const Partner = require('./models/partner');
-const Restaurant = require('./models/Restaurant');
+const Restaurant = require('./models/restaurant');
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/amble_db';
 
@@ -422,9 +422,9 @@ async function seedDatabase() {
     console.log('\n🌱 Starting database seed...\n');
 
     await mongoose.connect(MONGODB_URI);
-    console.log(' Connected to MongoDB:', MONGODB_URI);
+    console.log('✓ Connected to MongoDB:', MONGODB_URI);
 
-    console.log('\n  Clearing existing data...');
+    console.log('\n🗑️  Clearing existing data...');
     await User.deleteMany({});
     await Partner.deleteMany({});
     await Restaurant.deleteMany({});
@@ -439,7 +439,7 @@ async function seedDatabase() {
     }
 
     // Partners & Restaurants
-    console.log('\n  Inserting partners & restaurants...');
+    console.log('\n🍽️  Inserting partners & restaurants...');
     for (const { partner: partnerData, restaurant: restaurantData } of partnersData) {
       const partner = new Partner(partnerData);
       await partner.save(); // triggers bcrypt pre-save
@@ -454,15 +454,18 @@ async function seedDatabase() {
 
       console.log(`   ✓ ${partner.ownerName} → ${restaurant.name} [${partner.subscriptionPackage}]`);
     }
+    
+    // Seed tables
+    await seedTables();
 
     console.log('\n══════════════════════════════════════════════════');
-    console.log(' DATABASE SEEDED SUCCESSFULLY!');
+    console.log('✅ DATABASE SEEDED SUCCESSFULLY!');
     console.log('══════════════════════════════════════════════════');
-    console.log(' Customer Accounts:');
+    console.log('👤 Customer Accounts:');
     console.log('   lan.nguyen@gmail.com    / password123');
     console.log('   admin@amble.com         / admin123456');
     console.log('');
-    console.log('  Partner Accounts:');
+    console.log('🏪 Partner Accounts:');
     console.log('   partner@rooftop.vn      / demo123      (Premium)');
     console.log('   owner@sakuragarden.vn   / sakura123    (Pro)');
     console.log('   owner@phobohol.vn       / phobo123     (Basic)');
@@ -476,10 +479,61 @@ async function seedDatabase() {
     await mongoose.connection.close();
     process.exit(0);
   } catch (error) {
-    console.error('\n Seed failed:', error.message);
+    console.error('\n❌ Seed failed:', error.message);
     await mongoose.connection.close();
     process.exit(1);
   }
 }
 
 seedDatabase();
+
+// ─── Seed Tables for Restaurants ──────────────────────────────────────────────
+async function seedTables() {
+  const Table = require('./models/table');
+  
+  console.log('\n🪑 Seeding tables...');
+  await Table.deleteMany({});
+  
+  const restaurants = await Restaurant.find({}).lean();
+  
+  for (const restaurant of restaurants) {
+    // Create 3-5 tables per restaurant
+    const tableCount = Math.floor(Math.random() * 3) + 3;
+    
+    for (let i = 1; i <= tableCount; i++) {
+      const types = ['regular', 'view', 'vip'];
+      const type = types[Math.floor(Math.random() * types.length)];
+      
+      const table = await Table.create({
+        restaurantId: restaurant._id,
+        name: type === 'vip' ? `VIP ${String(i).padStart(2, '0')}` : 
+              type === 'view' ? `View ${String(i).padStart(2, '0')}` : 
+              `Bàn ${String(i).padStart(2, '0')}`,
+        type,
+        capacity: {
+          min: 2,
+          max: type === 'vip' ? 6 : type === 'view' ? 4 : 4,
+        },
+        description: type === 'vip' ? 'Phòng riêng tư, sang trọng' :
+                     type === 'view' ? 'Bàn cạnh cửa sổ, view đẹp' :
+                     'Bàn tiêu chuẩn, thoải mái',
+        features: type === 'vip' ? ['Riêng tư', 'Điều hòa', 'View đẹp', 'Phục vụ riêng'] :
+                  type === 'view' ? ['Cửa sổ', 'View thành phố', 'Ánh sáng tự nhiên'] :
+                  ['Thoải mái', 'Gần bar'],
+        images: [
+          'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400',
+          'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400',
+        ],
+        pricing: {
+          baseDeposit: type === 'vip' ? 500000 : type === 'view' ? 300000 : 200000,
+          peakHourMultiplier: 1.5,
+        },
+        isActive: true,
+      });
+      
+      console.log(`   ✓ ${restaurant.name} → ${table.name} (${type})`);
+    }
+  }
+  
+  console.log('   ✓ Tables seeded successfully');
+}

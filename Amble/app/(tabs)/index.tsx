@@ -763,10 +763,7 @@ export default function HomeScreen() {
   );
 }
 
-
-// ═══════════════════════════════════════════════════════════
 //  STYLES
-// ═══════════════════════════════════════════════════════════
 
 const cardFull = StyleSheet.create({
   card: {

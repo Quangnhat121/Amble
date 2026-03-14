@@ -37,14 +37,13 @@ export default function RootLayout() {
     const inTabsGroup =
       pathname.startsWith("/(tabs)") ||
       pathname === "/" ||
-      pathname.startsWith("/explore") ||
-      pathname.startsWith("/chat") ||
-      pathname.startsWith("/profile");
+      pathname.startsWith("/explore");
     const onWelcome = pathname === "/welcome";
 
-    // Không redirect khi đang ở các màn hình này
+    // ── Không redirect khi đang ở các màn hình con ──────────
     if (onWelcome) return;
-    if (pathname.startsWith("/restaurant/")) return; // ← cho phép vào detail
+    if (pathname.startsWith("/restaurant/")) return;  // detail nhà hàng
+    if (pathname.startsWith("/booking/")) return;     // flow đặt bàn
 
     if (isPartnerAuthenticated) {
       if (!inPartnerGroup) router.replace("/dashboard");
@@ -52,7 +51,10 @@ export default function RootLayout() {
     }
 
     if (isAuthenticated) {
-      if (!inTabsGroup) router.replace("/(tabs)");
+      // Chỉ redirect khi đang ở auth screens.
+      // KHÔNG redirect từ restaurant, booking, hay bất kỳ screen con nào khác
+      // vì khi router.back() chạy, pathname thay đổi và trigger effect này
+      if (inAuthGroup || inPartnerAuthGroup) router.replace("/(tabs)");
       return;
     }
 
@@ -72,6 +74,35 @@ export default function RootLayout() {
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen
           name="restaurant/[id]"
+          options={{
+            animation: "slide_from_right",
+            gestureEnabled: true,
+            gestureDirection: "horizontal",
+          }}
+        />
+        {/*
+          QUAN TRỌNG: booking KHÔNG có _layout.tsx riêng.
+          Tất cả screens nằm cùng root Stack → router.back() hoạt động
+          xuyên suốt từ payment → confirm → select-table → restaurant/[id]
+        */}
+        <Stack.Screen
+          name="booking/select-table"
+          options={{
+            animation: "slide_from_right",
+            gestureEnabled: true,
+            gestureDirection: "horizontal",
+          }}
+        />
+        <Stack.Screen
+          name="booking/confirm"
+          options={{
+            animation: "slide_from_right",
+            gestureEnabled: true,
+            gestureDirection: "horizontal",
+          }}
+        />
+        <Stack.Screen
+          name="booking/success"
           options={{
             animation: "slide_from_right",
             gestureEnabled: true,

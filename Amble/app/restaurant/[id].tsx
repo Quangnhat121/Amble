@@ -166,9 +166,7 @@ const SocialBtn = ({
   </TouchableOpacity>
 );
 
-// ═══════════════════════════════════════════════════════════
 //  DETAIL SCREEN
-// ═══════════════════════════════════════════════════════════
 export default function DetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -181,13 +179,14 @@ export default function DetailScreen() {
 
   // ── Fetch từ BE: GET /api/restaurants/:id ─────────────────
   const fetchDetail = useCallback(async () => {
-    if (!id) return;
+    if (!id) return;   
     setLoading(true);
     setError("");
     try {
       const res = await restaurantAPI.getById(id as string);
       setRestaurant(res.data.restaurant);
     } catch (err: any) {
+      console.error('[RestaurantDetail] Error:', err.response?.data || err.message);
       setError(
         err.response?.data?.message || "Không thể tải thông tin nhà hàng",
       );
@@ -213,21 +212,21 @@ export default function DetailScreen() {
   };
 
   const handleShare = async () => {
-  if (!restaurant) return;
+    if (!restaurant) return;
 
-  try {
-    await Share.share({
-      message:
-        `Amble Restaurant\n\n` +
-        `Name: ${restaurant.name}\n` +
-        `Address: ${restaurant.address || restaurant.location}\n` +
-        `Rating: ${restaurant.rating} (${restaurant.reviewCount} reviews)\n\n` +
-        `Discover this restaurant on Amble!`,
-    });
-  } catch {
-    /* silent */
-  }
-};
+    try {
+      await Share.share({
+        message:
+          `Amble Restaurant\n\n` +
+          `Name: ${restaurant.name}\n` +
+          `Address: ${restaurant.address || restaurant.location}\n` +
+          `Rating: ${restaurant.rating} (${restaurant.reviewCount} reviews)\n\n` +
+          `Discover this restaurant on Amble!`,
+      });
+    } catch {
+      /* silent */
+    }
+  };
 
   // ── Loading state ─────────────────────────────────────────
   if (loading) {
@@ -305,21 +304,32 @@ export default function DetailScreen() {
             ))}
           </ScrollView>
 
-          {/* Top gradient */}
+          {/* Gradient overlay - KHÔNG chặn touch */}
           <LinearGradient
             colors={["rgba(0,0,0,0.42)", "transparent", "rgba(0,0,0,0.52)"]}
             style={StyleSheet.absoluteFillObject}
             locations={[0, 0.38, 1]}
+            pointerEvents="none"
           />
 
-          {/* Top actions */}
-          <SafeAreaView style={s.heroTop}>
+          {/* Image dots - KHÔNG chặn touch */}
+          {images.length > 1 && (
+            <View style={s.dotRow} pointerEvents="none">
+              {images.map((_, i) => (
+                <View key={i} style={[s.dot, i === activeImg && s.dotActive]} />
+              ))}
+            </View>
+          )}
+
+          {/* Nút Back/Share/Fav - nằm SAU overlay, NHẬN touch */}
+          <SafeAreaView style={s.heroTop} pointerEvents="box-none">
             <TouchableOpacity
               style={s.heroBtn}
-              onPress={() => router.back()}
+              onPress={() => router.canGoBack() ? router.back() : router.replace("/(tabs)")}
               activeOpacity={0.85}
+              hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
             >
-              <Ionicons name="arrow-back-outline" size={22} color="#fff" />
+              <Ionicons name="arrow-back" size={22} color="#fff" />
             </TouchableOpacity>
 
             <View style={s.heroTopRight}>
@@ -327,6 +337,7 @@ export default function DetailScreen() {
                 style={s.heroBtn}
                 onPress={handleShare}
                 activeOpacity={0.85}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
                 <Ionicons name="share-social-outline" size={22} color="#fff" />
               </TouchableOpacity>
@@ -334,6 +345,7 @@ export default function DetailScreen() {
                 style={[s.heroBtn, isFav && s.heroBtnFav]}
                 onPress={() => setIsFav((v) => !v)}
                 activeOpacity={0.85}
+                hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
               >
                 <Ionicons
                   name={isFav ? "heart" : "heart-outline"}
@@ -344,30 +356,22 @@ export default function DetailScreen() {
             </View>
           </SafeAreaView>
 
-          {/* Image dots */}
-          {images.length > 1 && (
-            <View style={s.dotRow}>
-              {images.map((_, i) => (
-                <View key={i} style={[s.dot, i === activeImg && s.dotActive]} />
-              ))}
-            </View>
-          )}
-
-          {/* Featured badge */}
+          {/* Featured badge - không chặn touch */}
           {restaurant.isFeatured && (
             <LinearGradient
               colors={GRAD}
               style={s.heroBadge}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
+              pointerEvents="none"
             >
               <Text style={s.heroBadgeText}>Được yêu thích</Text>
             </LinearGradient>
           )}
 
-          {/* Image counter */}
+          {/* Image counter - không chặn touch */}
           {images.length > 1 && (
-            <View style={s.imgCounter}>
+            <View style={s.imgCounter} pointerEvents="none">
               <Text style={s.imgCounterText}>
                 {activeImg + 1} / {images.length}
               </Text>
@@ -589,44 +593,44 @@ export default function DetailScreen() {
             restaurant.instagram ||
             restaurant.tiktok ||
             restaurant.website) && (
-            <View style={s.section}>
-              <Text style={s.sectionTitle}>Mạng xã hội</Text>
-              <View style={s.socialRow}>
-                {restaurant.facebook && (
-                  <SocialBtn
-                    icon="logo-facebook"
-                    label="Facebook"
-                    url={restaurant.facebook}
-                    color="#1877F2"
-                  />
-                )}
-                {restaurant.instagram && (
-                  <SocialBtn
-                    icon="logo-instagram"
-                    label="Instagram"
-                    url={restaurant.instagram}
-                    color="#E1306C"
-                  />
-                )}
-                {restaurant.tiktok && (
-                  <SocialBtn
-                    icon="logo-tiktok"
-                    label="TikTok"
-                    url={restaurant.tiktok}
-                    color="#010101"
-                  />
-                )}
-                {restaurant.website && (
-                  <SocialBtn
-                    icon="globe-outline"
-                    label="Website"
-                    url={restaurant.website}
-                    color={PRIMARY}
-                  />
-                )}
+              <View style={s.section}>
+                <Text style={s.sectionTitle}>Mạng xã hội</Text>
+                <View style={s.socialRow}>
+                  {restaurant.facebook && (
+                    <SocialBtn
+                      icon="logo-facebook"
+                      label="Facebook"
+                      url={restaurant.facebook}
+                      color="#1877F2"
+                    />
+                  )}
+                  {restaurant.instagram && (
+                    <SocialBtn
+                      icon="logo-instagram"
+                      label="Instagram"
+                      url={restaurant.instagram}
+                      color="#E1306C"
+                    />
+                  )}
+                  {restaurant.tiktok && (
+                    <SocialBtn
+                      icon="logo-tiktok"
+                      label="TikTok"
+                      url={restaurant.tiktok}
+                      color="#010101"
+                    />
+                  )}
+                  {restaurant.website && (
+                    <SocialBtn
+                      icon="globe-outline"
+                      label="Website"
+                      url={restaurant.website}
+                      color={PRIMARY}
+                    />
+                  )}
+                </View>
               </View>
-            </View>
-          )}
+            )}
 
           {/* Bottom spacer for CTA bar */}
           <View style={{ height: 110 }} />
@@ -666,11 +670,17 @@ export default function DetailScreen() {
           </LinearGradient>
         </TouchableOpacity>
 
-        {/* Nút đặt bàn (placeholder — kết nối booking flow sau) */}
+        {/* Nút đặt bàn */}
         <TouchableOpacity
           style={s.bookBtn}
           onPress={() =>
-            Alert.alert("Đặt bàn", "Tính năng đặt bàn sẽ sớm ra mắt! 🍽️")
+            router.push({
+              pathname: "/booking/select-table" as any,
+              params: {
+                restaurantId: restaurant._id,
+                restaurantName: restaurant.name,
+              },
+            })
           }
           activeOpacity={0.85}
         >

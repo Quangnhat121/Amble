@@ -99,9 +99,18 @@ export const usePartnerAuthStore = create<PartnerAuthState>((set) => ({
   },
 
   logout: async () => {
-    await AsyncStorage.removeItem('amble_partner_token');
-    set({ partner: null, restaurant: null, token: null, isAuthenticated: false });
-  },
+  try {
+    await partnerAuthAPI.logout();
+  } catch (e) {}
+
+  await AsyncStorage.removeItem('amble_partner_token');
+
+  set({
+    partner: null,
+    restaurant: null,
+    isAuthenticated: false,
+  });
+},
 
   loadPartner: async () => {
     try {

@@ -1,7 +1,9 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const BASE_URL = 'http://10.0.2.2:5000/api'; // đổi thành IP thật khi test trên device
+const BASE_URL = 'http://10.0.2.2:5000/api'; // Android emulator
+// const BASE_URL = 'http://localhost:5000/api'; // iOS simulator
+// const BASE_URL = 'http://192.168.x.x:5000/api'; // Real device — đổi IP
 
 const api = axios.create({
   baseURL: BASE_URL,
@@ -9,7 +11,6 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 
-// Gắn token vào mọi request
 api.interceptors.request.use(async (config) => {
   const userToken    = await AsyncStorage.getItem('amble_token');
   const partnerToken = await AsyncStorage.getItem('amble_partner_token');
@@ -18,7 +19,7 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// ── Auth API ────────────────────────────────────────────
+// ── Auth ────────────────────────────────────────────────
 export const authAPI = {
   register: (data: { fullName: string; email: string; password: string; phone?: string }) =>
     api.post('/auth/register', data),
@@ -27,7 +28,7 @@ export const authAPI = {
   getMe: () => api.get('/auth/me'),
 };
 
-// ── Partner Auth API ────────────────────────────────────
+// ── Partner Auth ────────────────────────────────────────
 export const partnerAuthAPI = {
   register: (data: {
     ownerName: string; email: string; password: string; phone: string;
@@ -37,9 +38,10 @@ export const partnerAuthAPI = {
   login: (data: { email: string; password: string }) =>
     api.post('/partner/auth/login', data),
   getMe: () => api.get('/partner/auth/me'),
+   logout: () => api.post('/partner/auth/logout'),
 };
 
-// ── User API ────────────────────────────────────────────
+// ── User ────────────────────────────────────────────────
 export const userAPI = {
   getProfile: () => api.get('/users/profile'),
   updateProfile: (data: {
@@ -51,24 +53,56 @@ export const userAPI = {
   toggleFavoriteRoute: (routeId: string) => api.post(`/users/favorite/${routeId}`),
 };
 
-// ── Restaurant API ──────────────────────────────────────
+// ── Restaurant ──────────────────────────────────────────
 export const restaurantAPI = {
-  /** Lấy tất cả, hỗ trợ filter */
-  getAll: (params?: {
-    city?: string;
-    cuisine?: string;
-    category?: string;
-    search?: string;
-  }) => api.get('/restaurants', { params }),
-
-  /** Chỉ lấy featured */
+  getAll: (params?: { city?: string; cuisine?: string; category?: string; search?: string }) =>
+    api.get('/restaurants', { params }),
   getFeatured: () => api.get('/restaurants/featured'),
-
-  /** Chi tiết 1 nhà hàng */
   getById: (id: string) => api.get(`/restaurants/${id}`),
 };
 
-// ── Routes API (walking — giữ lại nếu dùng) ────────────
+// ── Booking ─────────────────────────────────────────────
+export const bookingAPI = {
+  // Bàn của nhà hàng
+  getTables: (restaurantId: string) =>
+    api.get(`/booking/tables/${restaurantId}`),
+
+  // Tạo booking (1 bước: create + confirm + pay)
+  create: (data: {
+    userId: string;
+    restaurantId: string;
+    tableId: string;
+    date: string;
+    time: string;
+    partySize: number;
+    purpose?: string;
+    specialRequests?: string;
+    paymentMethod: string;
+    voucherCode?: string;
+    voucherDiscount?: number;
+  }) => api.post('/booking/create', data),
+
+  // Lịch sử booking của user
+  getUserBookings: (userId: string) =>
+    api.get(`/booking/user/${userId}`),
+
+  // Chi tiết 1 booking
+  getById: (bookingId: string) =>
+    api.get(`/booking/${bookingId}`),
+
+  // Hủy booking
+  cancel: (bookingId: string, reason?: string) =>
+    api.delete(`/booking/${bookingId}/cancel`, { data: { reason } }),
+
+  // AI conversation
+  processMessage: (data: { message: string; sessionId?: string; userId?: string }) =>
+    api.post('/booking/conversation', data),
+
+  getSession: (sessionId: string) =>
+    api.get(`/booking/session/${sessionId}`),
+};
+
+// ── Routes ──────────────────────────────────────────────
 export const routesAPI = {
   getAll: (params?: { difficulty?: string; search?: string }) =>
     api.get('/routes', { params }),

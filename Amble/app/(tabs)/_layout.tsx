@@ -61,6 +61,15 @@ export default function TabsLayout() {
         ),
       }}
     />
+    <Tabs.Screen
+        name="history"
+        options={{
+          title: "Lịch sử đặt bàn",
+          tabBarIcon: ({ color }) => (
+            <Ionicons size={28} name="calendar-outline" color={color} />
+          ),
+        }}
+      />
       <Tabs.Screen
         name="profile"
         options={{

@@ -7,8 +7,9 @@ const authRoutes        = require('./routes/auth');
 const userRoutes        = require('./routes/users');
 const routeRoutes       = require('./routes/routes');
 const partnerAuthRoutes = require('./routes/partnerAuth');
-const restaurantRoutes  = require('./routes/restaurants');  // ← THÊM DÒNG NÀY
-
+const restaurantRoutes  = require('./routes/restaurants');
+const bookingRoutes     = require('./routes/booking');
+const aiRoutes          = require('./routes/ai');
 const app = express();
 
 // ── Middleware ──────────────────────────────────────────
@@ -27,8 +28,9 @@ app.use('/api/auth',         authRoutes);
 app.use('/api/users',        userRoutes);
 app.use('/api/routes',       routeRoutes);
 app.use('/api/partner/auth', partnerAuthRoutes);
-app.use('/api/restaurants',  restaurantRoutes);  // ← THÊM DÒNG NÀY
-
+app.use('/api/restaurants',  restaurantRoutes);
+app.use('/api/booking',      bookingRoutes);
+app.use('/api/ai',      aiRoutes);
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ success: true, message: '🚶 Amble API is running!' });
