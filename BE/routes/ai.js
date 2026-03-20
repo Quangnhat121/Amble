@@ -1,66 +1,84 @@
 const express = require('express');
 const router  = express.Router();
 
-const GEMINI_MODEL = 'gemini-2.5-flash';
+const OR_URL = 'https://openrouter.ai/api/v1/chat/completions';
 
-// ── Retry helper: tự retry khi bị 429 ────────────────────
-async function callGemini(apiKey, body, retries = 3) {
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${apiKey}`;
+async function callAI(apiKey, messages, systemPrompt, retries = 3) {
+  const body = {
+    model: 'google/gemini-2.5-flash',
+    max_tokens: 1000,
+    temperature: 0.7,
+    messages: [
+      ...(systemPrompt ? [{ role: 'system', content: systemPrompt }] : []),
+      ...messages,
+    ],
+  };
 
   for (let attempt = 1; attempt <= retries; attempt++) {
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-      const text = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
-      return { ok: true, text };
+    let response;
+    try {
+      response = await fetch(OR_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+          'HTTP-Referer': 'https://amble.app',
+          'X-Title': 'Amble',
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (fetchErr) {
+      console.error('[AI] network error:', fetchErr.message);
+      return { ok: false, status: 503, error: { message: 'Network: ' + fetchErr.message } };
     }
 
-    const errData = await response.json().catch(() => ({}));
-    const status  = response.status;
+    const rawText = await response.text();
+    // Log đầy đủ để debug
+    console.log(`[AI] attempt=${attempt} status=${response.status} body=${rawText.slice(0, 400)}`);
 
-    // 429 → đợi rồi retry
-    if (status === 429 && attempt < retries) {
-      // Lấy retryDelay từ response nếu có, không thì dùng 5s * attempt
-      const retryDelay = errData?.error?.details
-        ?.find(d => d.retryDelay)?.retryDelay;
-      const waitMs = retryDelay
-        ? parseInt(retryDelay) * 1000
-        : attempt * 5000;
+    if (response.ok) {
+      try {
+        const data = JSON.parse(rawText);
+        const text = data?.choices?.[0]?.message?.content ?? '';
+        return { ok: true, text };
+      } catch {
+        return { ok: false, status: 500, error: { message: 'Invalid JSON from OpenRouter' } };
+      }
+    }
 
-      console.log(`[AI] 429 rate limit — retry ${attempt}/${retries} sau ${waitMs/1000}s...`);
+    let errData = {};
+    try { errData = JSON.parse(rawText); } catch {}
+
+    if (response.status === 429 && attempt < retries) {
+      const waitMs = attempt * 5000;
+      console.log(`[AI] 429 — retry ${attempt}/${retries} sau ${waitMs / 1000}s...`);
       await new Promise(r => setTimeout(r, waitMs));
       continue;
     }
 
-    // Lỗi khác → không retry
-    console.error(`[AI] Gemini error ${status}:`, JSON.stringify(errData));
-    return { ok: false, status, error: errData };
+    return { ok: false, status: response.status, error: errData };
   }
 
-  return { ok: false, status: 429, error: { message: 'Rate limit — thử lại sau' } };
+  return { ok: false, status: 429, error: { message: 'Rate limit' } };
 }
 
 // ── GET /api/ai/test ──────────────────────────────────────
+// Mở trình duyệt: http://localhost:5000/api/ai/test
+// Xem log BE để biết OpenRouter trả về gì
 router.get('/test', async (req, res) => {
   const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey || apiKey.includes('xxxxx')) {
+  console.log('[AI/test] key =', apiKey ? apiKey.slice(0, 15) + '...' : 'MISSING');
+
+  if (!apiKey) {
     return res.json({ ok: false, problem: 'GEMINI_API_KEY chưa set trong .env' });
   }
 
-  const result = await callGemini(apiKey, {
-    contents: [{ role: 'user', parts: [{ text: 'Say "OK" only' }] }],
-    generationConfig: { maxOutputTokens: 10 },
-  });
+  const result = await callAI(apiKey, [{ role: 'user', content: 'Say OK only' }], null, 1);
 
-  if (result.ok && result.text) {
-    return res.json({ ok: true, gemini: result.text.trim(), key: apiKey.slice(0, 8) + '...' });
+  if (result.ok) {
+    return res.json({ ok: true, reply: result.text.trim() });
   }
-  return res.json({ ok: false, problem: 'Gemini lỗi', detail: result.error });
+  return res.json({ ok: false, status: result.status, detail: result.error });
 });
 
 // ── POST /api/ai/chat ─────────────────────────────────────
@@ -73,40 +91,23 @@ router.post('/chat', async (req, res) => {
     }
 
     const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey.includes('xxxxx')) {
+    if (!apiKey) {
       return res.status(500).json({ success: false, message: 'AI service not configured' });
     }
 
-    // Claude format → Gemini format
-    const geminiContents = messages.map((m) => ({
-      role: m.role === 'assistant' ? 'model' : 'user',
-      parts: [{ text: m.content }],
-    }));
-
-    const body = {
-      contents: geminiContents,
-      generationConfig: { maxOutputTokens: 1000, temperature: 0.7 },
-    };
-    if (system) {
-      body.systemInstruction = { parts: [{ text: system }] };
-    }
-
-    const result = await callGemini(apiKey, body, 3);
+    const result = await callAI(apiKey, messages, system || null);
 
     if (!result.ok) {
-      // Trả về thông báo thân thiện thay vì crash
+      console.error('[AI/chat] failed:', result.status, JSON.stringify(result.error));
       if (result.status === 429) {
-        return res.status(429).json({
-          success: false,
-          message: 'rate_limit',  // FE sẽ bắt code này
-        });
+        return res.status(429).json({ success: false, message: 'rate_limit' });
       }
       return res.status(502).json({ success: false, message: 'AI unavailable' });
     }
 
     return res.json({ success: true, text: result.text });
   } catch (err) {
-    console.error('[AI] error:', err.message);
+    console.error('[AI/chat] exception:', err.message);
     return res.status(500).json({ success: false, message: 'Lỗi server' });
   }
 });
