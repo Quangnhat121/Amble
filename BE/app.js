@@ -20,6 +20,7 @@ app.use(express.urlencoded({ extended: true }));
 // ── Connect MongoDB ─────────────────────────────────────
 mongoose
   .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/amble_db')
+
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.error('MongoDB error:', err));
 

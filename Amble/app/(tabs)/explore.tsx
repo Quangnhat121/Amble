@@ -9,6 +9,7 @@ import { useRouter } from 'expo-router';
 
 import { useAuthStore } from '../../store/authStore';
 import { restaurantAPI } from '../../services/api';
+import { useI18n } from '../../hooks/use-i18n';
 
 // ─── Design tokens ────────────────────────────────────────
 const PRIMARY = '#FF6B35';
@@ -28,12 +29,6 @@ const PRICE_COLOR: Record<string, string> = {
 
 // ─── Filter options ───────────────────────────────────────
 const PRICE_OPTIONS = ['$', '$$', '$$$'];
-const SORT_OPTIONS = [
-  { key: 'rating', label: 'Đánh giá cao nhất' },
-  { key: 'reviews', label: 'Nhiều đánh giá nhất' },
-  { key: 'name', label: 'Tên A-Z' },
-];
-const QUICK_TAGS = ['Món Việt', 'Đồ Âu', 'Rooftop', 'Nhật Bản', 'Lẩu nướng'];
 
 interface Restaurant {
   _id: string;
@@ -129,6 +124,20 @@ const RestaurantCard = ({
 // ═══════════════════════════════════════════════
 export default function ExploreScreen() {
   const { isAuthenticated } = useAuthStore();
+  const { t } = useI18n();
+  const sortOptions = [
+    { key: 'rating', label: t('sort.rating') },
+    { key: 'reviews', label: t('sort.reviews') },
+    { key: 'name', label: t('sort.name') },
+  ];
+
+  const quickTags = [
+    t('tag.vietnamese'),
+    t('tag.european'),
+    t('tag.rooftop'),
+    t('tag.japanese'),
+    t('tag.hotpot'),
+  ];
 
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [favorites, setFavorites] = useState<string[]>([]);
@@ -227,14 +236,14 @@ export default function ExploreScreen() {
 
       {/* ── HEADER ─────────────────────────────── */}
       <View style={styles.header}>
-        <Text style={styles.title}>Khám phá</Text>
+        <Text style={styles.title}>{t('explore.title')}</Text>
 
         {/* Search bar */}
         <View style={styles.searchBar}>
           <Ionicons name="search" size={16} color={TEXT_MUTED} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Tìm nhà hàng, món ăn..."
+            placeholder={t('explore.searchPlaceholder')}
             placeholderTextColor={TEXT_MUTED}
             value={query}
             onChangeText={setQuery}
@@ -269,7 +278,7 @@ export default function ExploreScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.tagsRow}
         >
-          {QUICK_TAGS.map((tag) => {
+          {quickTags.map((tag) => {
             const active = activeTag === tag;
             return (
               <TouchableOpacity
@@ -290,7 +299,7 @@ export default function ExploreScreen() {
         {showFilters && (
           <View style={styles.filterPanel}>
             {/* Price */}
-            <Text style={styles.filterLabel}>Mức giá</Text>
+            <Text style={styles.filterLabel}>{t('home.filterPrice')}</Text>
             <View style={styles.filterRow}>
               {PRICE_OPTIONS.map((p) => {
                 const active = activePrice === p;
@@ -309,9 +318,9 @@ export default function ExploreScreen() {
             </View>
 
             {/* Sort */}
-            <Text style={styles.filterLabel}>Sắp xếp</Text>
+            <Text style={styles.filterLabel}>{t('home.filterSort')}</Text>
             <View style={styles.filterRow}>
-              {SORT_OPTIONS.map((s) => {
+              {sortOptions.map((s) => {
                 const active = activeSort === s.key;
                 return (
                   <TouchableOpacity
@@ -330,7 +339,7 @@ export default function ExploreScreen() {
             {/* Clear */}
             {hasActiveFilter && (
               <TouchableOpacity style={styles.clearBtn} onPress={clearFilters}>
-                <Text style={styles.clearBtnText}>Xóa bộ lọc</Text>
+                <Text style={styles.clearBtnText}>{t('home.clearFilters')}</Text>
               </TouchableOpacity>
             )}
           </View>
@@ -340,11 +349,11 @@ export default function ExploreScreen() {
       {/* ── Result count ────────────────────────── */}
       <View style={styles.resultRow}>
         <Text style={styles.resultText}>
-          {filtered.length} nhà hàng
+          {t('explore.resultsCount', { count: filtered.length })}
         </Text>
         {hasActiveFilter && (
           <TouchableOpacity onPress={clearFilters}>
-            <Text style={styles.clearInline}>Xóa lọc ✕</Text>
+            <Text style={styles.clearInline}>{t('explore.clearInline')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -361,8 +370,8 @@ export default function ExploreScreen() {
           !loading ? (
             <View style={styles.emptyBox}>
               <Text style={styles.emptyIcon}>🍽️</Text>
-              <Text style={styles.emptyTitle}>Không tìm thấy nhà hàng</Text>
-              <Text style={styles.emptyText}>Thử từ khóa hoặc bộ lọc khác</Text>
+              <Text style={styles.emptyTitle}>{t('home.noResultsTitle')}</Text>
+              <Text style={styles.emptyText}>{t('home.noResultsSubtitle')}</Text>
             </View>
           ) : null
         }

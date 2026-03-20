@@ -8,28 +8,38 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { bookingAPI } from "@/services/api";
 import { useAuthStore } from "@/store/authStore";
+import { useI18n } from "../../hooks/use-i18n";
 
 const PRIMARY = "#FF6B35";
 
 type Tab = "active" | "completed" | "cancelled";
 
-const TAB_CONFIG: { id: Tab; label: string; statuses: string[] }[] = [
-    { id: "active",    label: "Đang đặt",  statuses: ["confirmed", "paid", "draft"] },
-    { id: "completed", label: "Đã xong",   statuses: ["completed"] },
-    { id: "cancelled", label: "Đã hủy",    statuses: ["cancelled"] },
-];
-
-const STATUS_DISPLAY: Record<string, { label: string; color: string; bg: string }> = {
-    draft:     { label: "Chờ xác nhận", color: "#92400E", bg: "#FEF3C7" },
-    confirmed: { label: "Đã xác nhận",  color: "#065F46", bg: "#D1FAE5" },
-    paid:      { label: "Đã thanh toán",color: "#1D4ED8", bg: "#DBEAFE" },
-    completed: { label: "Hoàn thành",   color: "#374151", bg: "#F3F4F6" },
-    cancelled: { label: "Đã hủy",       color: "#991B1B", bg: "#FEE2E2" },
+const STATUS_DISPLAY_COLORS: Record<string, { color: string; bg: string }> = {
+    draft:     { color: "#92400E", bg: "#FEF3C7" },
+    confirmed: { color: "#065F46", bg: "#D1FAE5" },
+    paid:      { color: "#1D4ED8", bg: "#DBEAFE" },
+    completed: { color: "#374151", bg: "#F3F4F6" },
+    cancelled: { color: "#991B1B", bg: "#FEE2E2" },
 };
 
 export default function BookingHistoryScreen() {
     const router   = useRouter();
     const { user } = useAuthStore();
+    const { t, locale } = useI18n();
+
+    const tabConfig: { id: Tab; label: string; statuses: string[] }[] = [
+        { id: "active",    label: t("history.tab.active"),  statuses: ["confirmed", "paid", "draft"] },
+        { id: "completed", label: t("history.tab.completed"),   statuses: ["completed"] },
+        { id: "cancelled", label: t("history.tab.cancelled"),    statuses: ["cancelled"] },
+    ];
+
+    const statusDisplay: Record<string, { label: string; color: string; bg: string }> = {
+        draft:     { label: t("history.status.draft"), color: STATUS_DISPLAY_COLORS.draft.color, bg: STATUS_DISPLAY_COLORS.draft.bg },
+        confirmed: { label: t("history.status.confirmed"),  color: STATUS_DISPLAY_COLORS.confirmed.color, bg: STATUS_DISPLAY_COLORS.confirmed.bg },
+        paid:      { label: t("history.status.paid"), color: STATUS_DISPLAY_COLORS.paid.color, bg: STATUS_DISPLAY_COLORS.paid.bg },
+        completed: { label: t("history.status.completed"),   color: STATUS_DISPLAY_COLORS.completed.color, bg: STATUS_DISPLAY_COLORS.completed.bg },
+        cancelled: { label: t("history.status.cancelled"),       color: STATUS_DISPLAY_COLORS.cancelled.color, bg: STATUS_DISPLAY_COLORS.cancelled.bg },
+    };
 
     const [activeTab, setActiveTab]   = useState<Tab>("active");
     const [bookings, setBookings]     = useState<any[]>([]);
@@ -56,26 +66,26 @@ export default function BookingHistoryScreen() {
 
     const handleCancel = (bookingId: string, bookingNumber: string) => {
         Alert.alert(
-            "Hủy đặt bàn",
-            `Bạn có chắc muốn hủy booking ${bookingNumber}?\nTiền cọc sẽ được hoàn nếu hủy trước 2 giờ.`,
+            t("history.cancelTitle"),
+            t("history.cancelConfirm", { bookingNumber }),
             [
-                { text: "Không", style: "cancel" },
+                { text: t("history.cancelNo"), style: "cancel" },
                 {
-                    text: "Hủy đặt bàn",
+                    text: t("history.cancelYes"),
                     style: "destructive",
                     onPress: async () => {
                         setCancelling(bookingId);
                         try {
-                            await bookingAPI.cancel(bookingId, "Người dùng hủy");
+                            await bookingAPI.cancel(bookingId, t("history.cancelReason"));
                             // Cập nhật local state
                             setBookings(prev =>
                                 prev.map(b =>
                                     b._id === bookingId ? { ...b, status: "cancelled" } : b
                                 )
                             );
-                            Alert.alert("Thành công", "Đã hủy đặt bàn");
+                            Alert.alert(t("history.cancelSuccessTitle"), t("history.cancelSuccessMessage"));
                         } catch (err: any) {
-                            Alert.alert("Lỗi", err.response?.data?.message || "Hủy thất bại");
+                            Alert.alert(t("auth.error"), err.response?.data?.message || t("history.cancelError"));
                         } finally {
                             setCancelling(null);
                         }
@@ -85,7 +95,7 @@ export default function BookingHistoryScreen() {
         );
     };
 
-    const currentTab = TAB_CONFIG.find(t => t.id === activeTab)!;
+    const currentTab = tabConfig.find(t => t.id === activeTab)!;
     const filteredBookings = bookings.filter(b =>
         currentTab.statuses.includes(b.status)
     );
@@ -93,7 +103,7 @@ export default function BookingHistoryScreen() {
     const renderItem = ({ item }: { item: any }) => {
         const restaurant = item.restaurantId;
         const table      = item.tableId;
-        const status     = STATUS_DISPLAY[item.status] || STATUS_DISPLAY.draft;
+        const status     = statusDisplay[item.status] || statusDisplay.draft;
         const canCancel  = ["draft", "confirmed", "paid"].includes(item.status);
 
         return (
@@ -107,7 +117,7 @@ export default function BookingHistoryScreen() {
                 <View style={c.cardBody}>
                     {/* Header */}
                     <View style={c.cardHeaderRow}>
-                        <Text style={c.restName} numberOfLines={1}>{restaurant?.name || "Nhà hàng"}</Text>
+                        <Text style={c.restName} numberOfLines={1}>{restaurant?.name || t("history.restaurantFallback")}</Text>
                         <View style={[c.statusBadge, { backgroundColor: status.bg }]}>
                             <Text style={[c.statusTxt, { color: status.color }]}>{status.label}</Text>
                         </View>
@@ -116,7 +126,7 @@ export default function BookingHistoryScreen() {
                     {/* Details */}
                     <View style={c.detailRow}>
                         <Ionicons name="restaurant-outline" size={13} color="#9CA3AF" />
-                        <Text style={c.detailTxt}>{table?.name || "Bàn"}</Text>
+                        <Text style={c.detailTxt}>{table?.name || t("history.tableFallback")}</Text>
                     </View>
                     <View style={c.detailRow}>
                         <Ionicons name="calendar-outline" size={13} color="#9CA3AF" />
@@ -124,15 +134,15 @@ export default function BookingHistoryScreen() {
                     </View>
                     <View style={c.detailRow}>
                         <Ionicons name="people-outline" size={13} color="#9CA3AF" />
-                        <Text style={c.detailTxt}>{item.bookingDetails?.partySize} người</Text>
+                        <Text style={c.detailTxt}>{item.bookingDetails?.partySize} {t("common.peopleUnit")}</Text>
                     </View>
 
                     {/* Footer */}
                     <View style={c.cardFooter}>
                         <View>
-                            <Text style={c.depositLabel}>Tiền cọc</Text>
+                            <Text style={c.depositLabel}>{t("history.deposit")}</Text>
                             <Text style={c.depositValue}>
-                                {item.pricing?.totalAmount?.toLocaleString("vi-VN")}đ
+                                {item.pricing?.totalAmount?.toLocaleString(locale)}đ
                             </Text>
                         </View>
                         <Text style={c.bookingNum}>#{item.bookingNumber}</Text>
@@ -148,7 +158,7 @@ export default function BookingHistoryScreen() {
                         >
                             {cancelling === item._id
                                 ? <ActivityIndicator size="small" color="#EF4444" />
-                                : <Text style={c.cancelTxt}>Hủy đặt bàn</Text>
+                                : <Text style={c.cancelTxt}>{t("history.cancelYes")}</Text>
                             }
                         </TouchableOpacity>
                     )}
@@ -164,13 +174,13 @@ export default function BookingHistoryScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
                     <Ionicons name="arrow-back" size={22} color="#1A1A1A" />
                 </TouchableOpacity>
-                <Text style={s.headerTitle}>Lịch sử đặt bàn</Text>
+                <Text style={s.headerTitle}>{t("history.header")}</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             {/* Tabs */}
             <View style={s.tabBar}>
-                {TAB_CONFIG.map(tab => {
+                {tabConfig.map(tab => {
                     const count = bookings.filter(b => tab.statuses.includes(b.status)).length;
                     const active = activeTab === tab.id;
                     return (
@@ -197,14 +207,14 @@ export default function BookingHistoryScreen() {
             ) : filteredBookings.length === 0 ? (
                 <View style={s.center}>
                     <Text style={{ fontSize: 48 }}>📋</Text>
-                    <Text style={s.emptyTxt}>Không có đặt bàn nào</Text>
+                    <Text style={s.emptyTxt}>{t("history.empty")}</Text>
                     <TouchableOpacity
                         style={s.exploreBtn}
                         onPress={() => router.push("/(tabs)/")}
                         activeOpacity={0.8}
                     >
                         <LinearGradient colors={["#FF6B35","#FFD700"]} style={s.exploreBtnInner} start={{x:0,y:0}} end={{x:1,y:0}}>
-                            <Text style={s.exploreBtnTxt}>Khám phá nhà hàng</Text>
+                            <Text style={s.exploreBtnTxt}>{t("history.explore")}</Text>
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>

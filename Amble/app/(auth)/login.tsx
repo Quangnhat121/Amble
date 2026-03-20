@@ -15,6 +15,7 @@ import { Link, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuthStore } from "../../store/authStore";
 import { Ionicons } from "@expo/vector-icons";
+import { useI18n } from "../../hooks/use-i18n";
 
 // ─── Design tokens ───
 const PRIMARY = "#FF6B35";
@@ -28,6 +29,7 @@ const BORDER = "#E5E7EB";
 
 export default function LoginScreen() {
   const router = useRouter();
+  const { t } = useI18n();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -37,14 +39,14 @@ export default function LoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập email và mật khẩu");
+      Alert.alert(t("auth.error"), t("login.missingFields"));
       return;
     }
 
     try {
       await login(email.trim().toLowerCase(), password);
     } catch (error: any) {
-      Alert.alert("Đăng nhập thất bại", error.message);
+      Alert.alert(t("auth.loginFailed"), error.message);
     }
   };
 
@@ -82,26 +84,26 @@ export default function LoginScreen() {
           </View>
 
           <Text style={styles.appName}>Amble</Text>
-          <Text style={styles.tagline}>Khám phá hành trình của bạn</Text>
+          <Text style={styles.tagline}>{t("login.tagline")}</Text>
         </LinearGradient>
 
         {/* ─── Form Card ─── */}
         <View style={styles.formCard}>
-          <Text style={styles.welcomeTitle}>Chào mừng trở lại!</Text>
+          <Text style={styles.welcomeTitle}>{t("login.welcomeTitle")}</Text>
           <Text style={styles.welcomeSubtitle}>
-            Đăng nhập để tiếp tục hành trình của bạn
+            {t("login.welcomeSubtitle")}
           </Text>
 
           {/* Email */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
+            <Text style={styles.label}>{t("auth.email")}</Text>
 
             <View style={styles.inputWrapper}>
               <Ionicons name="mail-outline" size={18} color={TEXT_MUTED} />
 
               <TextInput
                 style={styles.input}
-                placeholder="your@email.com"
+                placeholder={t("login.emailPlaceholder")}
                 placeholderTextColor={TEXT_MUTED}
                 value={email}
                 onChangeText={setEmail}
@@ -114,10 +116,10 @@ export default function LoginScreen() {
           {/* Password */}
           <View style={styles.inputGroup}>
             <View style={styles.labelRow}>
-              <Text style={styles.label}>Mật khẩu</Text>
+              <Text style={styles.label}>{t("auth.password")}</Text>
 
               <TouchableOpacity>
-                <Text style={styles.forgotText}>Quên mật khẩu?</Text>
+                <Text style={styles.forgotText}>{t("auth.forgotPassword")}</Text>
               </TouchableOpacity>
             </View>
 
@@ -126,7 +128,7 @@ export default function LoginScreen() {
 
               <TextInput
                 style={styles.input}
-                placeholder="Nhập mật khẩu"
+                placeholder={t("login.passwordPlaceholder")}
                 placeholderTextColor={TEXT_MUTED}
                 value={password}
                 onChangeText={setPassword}
@@ -161,7 +163,7 @@ export default function LoginScreen() {
               {isLoading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.loginBtnText}>Đăng nhập</Text>
+                <Text style={styles.loginBtnText}>{t("auth.login")}</Text>
               )}
             </LinearGradient>
           </TouchableOpacity>
@@ -169,23 +171,23 @@ export default function LoginScreen() {
           {/* Divider */}
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>hoặc</Text>
+            <Text style={styles.dividerText}>{t("welcome.or")}</Text>
             <View style={styles.dividerLine} />
           </View>
 
           {/* Google Login */}
           <TouchableOpacity style={styles.googleBtn}>
             <Ionicons name="logo-google" size={20} color="#DB4437" />
-            <Text style={styles.googleText}>Tiếp tục với Google</Text>
+            <Text style={styles.googleText}>{t("auth.continueWithGoogle")}</Text>
           </TouchableOpacity>
 
           {/* Register */}
           <View style={styles.registerRow}>
-            <Text style={styles.registerText}>Chưa có tài khoản? </Text>
+            <Text style={styles.registerText}>{t("auth.noAccount")} </Text>
 
             <Link href="/(auth)/register" asChild>
               <TouchableOpacity>
-                <Text style={styles.registerLink}>Đăng ký ngay</Text>
+                <Text style={styles.registerLink}>{t("auth.registerNow")}</Text>
               </TouchableOpacity>
             </Link>
           </View>

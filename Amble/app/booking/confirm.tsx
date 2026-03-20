@@ -8,16 +8,11 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { bookingAPI } from "@/services/api";
 import { useAuthStore } from "@/store/authStore";
+import { useI18n } from "../../hooks/use-i18n";
 
 const PRIMARY = "#FF6B35";
 
 type PaymentId = "momo" | "zalopay" | "bank" | "credit";
-const PAYMENT_METHODS: { id: PaymentId; name: string; icon: keyof typeof Ionicons.glyphMap }[] = [
- { id: "momo", name: "MoMo", icon: "wallet-outline" },
- { id: "zalopay", name: "ZaloPay", icon: "phone-portrait-outline" },
- { id: "bank", name: "Chuyển khoản", icon: "business-outline" },
- { id: "credit", name: "Thẻ tín dụng", icon: "card-outline" },
-];
 
 const VOUCHERS = [
     { code: "AMBLE10",  discount: 10,    minBill: 50000,  isPercent: true  },
@@ -25,14 +20,23 @@ const VOUCHERS = [
     { code: "VIP50",    discount: 50000, minBill: 200000, isPercent: false },
 ];
 
-const TABLE_TYPE_LABELS: Record<string, string> = {
-    vip: "✨ Bàn VIP", view: "🌆 Bàn View Đẹp",
-    regular: "🪑 Bàn Thường", standard: "🪑 Bàn Thường",
-};
 
 export default function ConfirmBookingScreen() {
     const router = useRouter();
     const { user } = useAuthStore();
+    const { t, locale } = useI18n();
+    const paymentMethods: { id: PaymentId; name: string; icon: keyof typeof Ionicons.glyphMap }[] = [
+        { id: "momo", name: t("payment.momo"), icon: "wallet-outline" },
+        { id: "zalopay", name: t("payment.zalopay"), icon: "phone-portrait-outline" },
+        { id: "bank", name: t("payment.bank"), icon: "business-outline" },
+        { id: "credit", name: t("payment.credit"), icon: "card-outline" },
+    ];
+    const tableTypeLabels: Record<string, string> = {
+        vip: `✨ ${t("table.type.vip")}`,
+        view: `🌆 ${t("table.type.view")}`,
+        regular: `🪑 ${t("table.type.standard")}`,
+        standard: `🪑 ${t("table.type.standard")}`,
+    };
     const {
         restaurantId, restaurantName, tableId, tableName,
         tableType, tableImage, deposit, date, time, partySize,
@@ -63,19 +67,19 @@ export default function ConfirmBookingScreen() {
     const applyVoucher = () => {
         const found = VOUCHERS.find(v => v.code.toUpperCase() === voucherInput.toUpperCase());
         if (found) {
-            if (depositAmt >= found.minBill) { setAppliedVoucher(found); setVoucherError(""); }
-            else setVoucherError(`Hóa đơn tối thiểu: ${(found.minBill/1000).toFixed(0)}k`);
-        } else setVoucherError("Mã voucher không hợp lệ");
+                if (depositAmt >= found.minBill) { setAppliedVoucher(found); setVoucherError(""); }
+                else setVoucherError(t("confirm.voucherMin", { min: (found.minBill/1000).toFixed(0) }));
+            } else setVoucherError(t("confirm.voucherInvalid"));
     };
 
     const bookingData = { date: date || "", time: time || "19:00", partySize: partySize || "2" };
     const formatDate = (d: string) => {
-        try { return new Date(d).toLocaleDateString("vi-VN", { weekday: "long", year: "numeric", month: "long", day: "numeric" }); }
+        try { return new Date(d).toLocaleDateString(locale, { weekday: "long", year: "numeric", month: "long", day: "numeric" }); }
         catch { return d; }
     };
 
     const handleConfirm = async () => {
-        if (!user?._id) { Alert.alert("Lỗi", "Vui lòng đăng nhập để đặt bàn"); return; }
+        if (!user?._id) { Alert.alert(t("auth.error"), t("confirm.loginRequired")); return; }
         setLoading(true);
         try {
             const res = await bookingAPI.create({
@@ -103,11 +107,11 @@ export default function ConfirmBookingScreen() {
                 },
             });
         } catch (err: any) {
-            Alert.alert("Lỗi", err.response?.data?.message || "Đặt bàn thất bại. Vui lòng thử lại.");
+            Alert.alert(t("auth.error"), err.response?.data?.message || t("confirm.bookingFailed"));
         } finally { setLoading(false); }
     };
 
-    const selectedPM = PAYMENT_METHODS.find(p => p.id === selectedPayment);
+    const selectedPM = paymentMethods.find(p => p.id === selectedPayment);
 
     return (
         <SafeAreaView style={s.container}>
@@ -115,64 +119,64 @@ export default function ConfirmBookingScreen() {
                 <TouchableOpacity onPress={() => router.back()} style={s.backBtn} activeOpacity={0.7}>
                     <Ionicons name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
-                <Text style={s.headerTitle}>Xác nhận đặt bàn</Text>
+                <Text style={s.headerTitle}>{t("confirm.title")}</Text>
                 <View style={{ width: 40 }} />
             </View>
 
             <ScrollView style={s.scroll} showsVerticalScrollIndicator={false}>
                 {/* Nhà hàng */}
                 <View style={s.section}>
-                    <Text style={s.sectionTitle}>Nhà hàng</Text>
+                    <Text style={s.sectionTitle}>{t("confirm.section.restaurant")}</Text>
                     <View style={s.card}>
                         <Image source={{ uri: tableImage || "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=400" }} style={s.restaurantImage} />
                         <View style={s.restaurantInfo}>
                             <Text style={s.restaurantName}>{restaurantName}</Text>
-                            <Text style={s.restaurantAddress}>TP. Hồ Chí Minh</Text>
+                            <Text style={s.restaurantAddress}>{t("confirm.cityFallback")}</Text>
                         </View>
                     </View>
                 </View>
 
                 {/* Bàn */}
                 <View style={s.section}>
-                    <Text style={s.sectionTitle}>Bàn đã chọn</Text>
+                    <Text style={s.sectionTitle}>{t("confirm.section.table")}</Text>
                     <View style={s.card}>
                         <Image source={{ uri: tableImage || "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=400" }} style={s.tableImage} />
                         <View style={s.tableInfo}>
                             <Text style={s.tableName}>{tableName}</Text>
-                            <Text style={s.tableFeatures}>{TABLE_TYPE_LABELS[tableType || ""] || "🪑 Bàn"}</Text>
+                            <Text style={s.tableFeatures}>{tableTypeLabels[tableType || ""] || "🪑"}</Text>
                         </View>
                     </View>
                 </View>
 
                 {/* Chi tiết */}
                 <View style={s.section}>
-                    <Text style={s.sectionTitle}>Chi tiết đặt bàn</Text>
+                    <Text style={s.sectionTitle}>{t("confirm.section.details")}</Text>
                     <View style={s.detailsCard}>
                         <View style={s.detailRow}>
                             <Ionicons name="calendar-outline" size={20} color="#666" />
-                            <Text style={s.detailLabel}>Ngày</Text>
+                            <Text style={s.detailLabel}>{t("confirm.label.date")}</Text>
                             <Text style={s.detailValue}>{formatDate(bookingData.date)}</Text>
                         </View>
                         <View style={s.divider} />
                         <View style={s.detailRow}>
                             <Ionicons name="time-outline" size={20} color="#666" />
-                            <Text style={s.detailLabel}>Giờ</Text>
+                            <Text style={s.detailLabel}>{t("confirm.label.time")}</Text>
                             <Text style={s.detailValue}>{bookingData.time}</Text>
                         </View>
                         <View style={s.divider} />
                         <View style={s.detailRow}>
                             <Ionicons name="people-outline" size={20} color="#666" />
-                            <Text style={s.detailLabel}>Số người</Text>
-                            <Text style={s.detailValue}>{bookingData.partySize} người</Text>
+                            <Text style={s.detailLabel}>{t("confirm.label.people")}</Text>
+                            <Text style={s.detailValue}>{bookingData.partySize} {t("common.peopleUnit")}</Text>
                         </View>
                     </View>
                 </View>
 
                 {/* Ghi chú */}
                 <View style={s.section}>
-                    <Text style={s.sectionTitle}>Ghi chú (tuỳ chọn)</Text>
+                    <Text style={s.sectionTitle}>{t("confirm.section.note")}</Text>
                     <TextInput
-                        style={s.noteInput} placeholder="Yêu cầu đặc biệt, dị ứng thực phẩm..."
+                        style={s.noteInput} placeholder={t("confirm.label.notePlaceholder")}
                         placeholderTextColor="#9CA3AF" value={note} onChangeText={setNote}
                         multiline numberOfLines={3} textAlignVertical="top"
                     />
@@ -180,7 +184,7 @@ export default function ConfirmBookingScreen() {
 
                 {/* Voucher */}
                 <View style={s.section}>
-                    <Text style={s.sectionTitle}> Mã voucher</Text>
+                    <Text style={s.sectionTitle}>{t("confirm.section.voucher")}</Text>
                     <View style={s.voucherRow}>
                         <TextInput
                             style={s.voucherInput} placeholder="AMBLE10, GENZ2025..."
@@ -190,16 +194,16 @@ export default function ConfirmBookingScreen() {
                         />
                         <TouchableOpacity style={s.applyWrap} onPress={applyVoucher} activeOpacity={0.85}>
                             <LinearGradient colors={["#FF6B35","#FFD700"]} style={s.applyBtn} start={{x:0,y:0}} end={{x:1,y:0}}>
-                                <Text style={s.applyBtnTxt}>Áp dụng</Text>
+                                <Text style={s.applyBtnTxt}>{t("confirm.apply")}</Text>
                             </LinearGradient>
                         </TouchableOpacity>
                     </View>
                     {!!voucherError && <Text style={s.voucherErr}>{voucherError}</Text>}
                     {appliedVoucher && (
                         <View style={s.appliedRow}>
-                            <Text style={s.appliedTxt}>✓ {appliedVoucher.code} đã áp dụng!</Text>
+                            <Text style={s.appliedTxt}>{t("confirm.voucherApplied", { code: appliedVoucher.code })}</Text>
                             <TouchableOpacity onPress={() => { setAppliedVoucher(null); setVoucherInput(""); }}>
-                                <Text style={{ fontSize: 11, color: "#EF4444" }}>Xóa</Text>
+                                <Text style={{ fontSize: 11, color: "#EF4444" }}>{t("confirm.remove")}</Text>
                             </TouchableOpacity>
                         </View>
                     )}
@@ -215,7 +219,7 @@ export default function ConfirmBookingScreen() {
 
                 {/* Phương thức thanh toán */}
                 <View style={s.section}>
-                    <Text style={s.sectionTitle}>Phương thức thanh toán</Text>
+                    <Text style={s.sectionTitle}>{t("confirm.section.payment")}</Text>
                     <TouchableOpacity style={s.pmSelector} onPress={() => setShowPayments(v => !v)} activeOpacity={0.8}>
                         <Ionicons name={selectedPM?.icon} size={22} color="#1A1A1A" />
                         <Text style={s.pmSelectorName}>{selectedPM?.name}</Text>
@@ -223,9 +227,9 @@ export default function ConfirmBookingScreen() {
                     </TouchableOpacity>
                     {showPayments && (
                         <View style={s.pmList}>
-                            {PAYMENT_METHODS.map((pm, i) => (
+                            {paymentMethods.map((pm, i) => (
                                 <TouchableOpacity key={pm.id}
-                                    style={[s.pmOption, selectedPayment === pm.id && s.pmOptionActive, i < PAYMENT_METHODS.length - 1 && s.pmOptionBorder]}
+                                    style={[s.pmOption, selectedPayment === pm.id && s.pmOptionActive, i < paymentMethods.length - 1 && s.pmOptionBorder]}
                                     onPress={() => { setSelectedPayment(pm.id); setShowPayments(false); }}>
                                     <Ionicons name={pm.icon} size={20} color="#1A1A1A" />
                                     <Text style={s.pmOptionName}>{pm.name}</Text>
@@ -238,20 +242,21 @@ export default function ConfirmBookingScreen() {
 
                 {/* Tổng tiền */}
                 <View style={s.section}>
+                    <Text style={s.sectionTitle}>{t("confirm.section.total")}</Text>
                     <View style={s.priceCard}>
                         <View style={s.priceRow}>
-                            <Text style={s.priceLabel}>Tiền cọc bàn</Text>
-                            <Text style={s.priceValue}>{depositAmt.toLocaleString("vi-VN")}đ</Text>
+                            <Text style={s.priceLabel}>{t("confirm.deposit")}</Text>
+                            <Text style={s.priceValue}>{depositAmt.toLocaleString(locale)}đ</Text>
                         </View>
                         {discount > 0 && (
                             <View style={s.priceRow}>
-                                <Text style={[s.priceLabel, { color: "#22C55E" }]}>Voucher giảm</Text>
-                                <Text style={[s.priceValue, { color: "#22C55E" }]}>-{discount.toLocaleString("vi-VN")}đ</Text>
+                                <Text style={[s.priceLabel, { color: "#22C55E" }]}>{t("confirm.voucherDiscount")}</Text>
+                                <Text style={[s.priceValue, { color: "#22C55E" }]}>-{discount.toLocaleString(locale)}đ</Text>
                             </View>
                         )}
                         <View style={[s.priceRow, s.totalRow]}>
-                            <Text style={s.totalLabel}>Tổng thanh toán</Text>
-                            <Text style={s.totalValue}>{total.toLocaleString("vi-VN")}đ</Text>
+                            <Text style={s.totalLabel}>{t("confirm.totalPay")}</Text>
+                            <Text style={s.totalValue}>{total.toLocaleString(locale)}đ</Text>
                         </View>
                     </View>
                 </View>
@@ -259,6 +264,7 @@ export default function ConfirmBookingScreen() {
                 <View style={s.infoBox}>
                     <Ionicons name="information-circle-outline" size={14} color={PRIMARY} style={{ marginTop: 1 }} />
                     <Text style={s.infoTxt}>Tiền cọc sẽ được trừ vào hóa đơn khi đến nhà hàng. Hủy trước 2 giờ: hoàn tiền cọc.</Text>
+                    <Text style={s.infoTxt}>{t("confirm.info")}</Text>
                 </View>
                 <View style={{ height: 100 }} />
             </ScrollView>
@@ -267,8 +273,8 @@ export default function ConfirmBookingScreen() {
                 <TouchableOpacity style={s.confirmBtn} onPress={handleConfirm} disabled={loading} activeOpacity={0.8}>
                     <LinearGradient colors={loading ? ["#E5E7EB","#E5E7EB"] : ["#FF6B35","#FFD700"]} style={s.confirmBtnInner} start={{x:0,y:0}} end={{x:1,y:0}}>
                         {loading
-                            ? <><ActivityIndicator color="#999" /><Text style={[s.confirmBtnText, { color: "#999" }]}>Đang xử lý...</Text></>
-                            : <><Ionicons name="checkmark-circle-outline" size={22} color="#fff" /><Text style={s.confirmBtnText}>Xác nhận & Thanh toán</Text></>
+                            ? <><ActivityIndicator color="#999" /><Text style={[s.confirmBtnText, { color: "#999" }]}>{t("confirm.processing")}</Text></>
+                            : <><Ionicons name="checkmark-circle-outline" size={22} color="#fff" /><Text style={s.confirmBtnText}>{t("confirm.confirmPay")}</Text></>
                         }
                     </LinearGradient>
                 </TouchableOpacity>

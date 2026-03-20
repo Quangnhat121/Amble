@@ -11,11 +11,13 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { useI18n } from "../../hooks/use-i18n";
 
 const PRIMARY = "#FF6B35";
 
 export default function BookingSuccessScreen() {
     const router = useRouter();
+    const { t, locale } = useI18n();
     const {
         restaurantName,
         restaurantImage,
@@ -52,9 +54,9 @@ export default function BookingSuccessScreen() {
                 </View>
 
                 {/* Title */}
-                <Text style={s.title}>Đặt Bàn Thành Công!</Text>
+                <Text style={s.title}>{t("success.title")}</Text>
                 <Text style={s.subtitle}>
-                    Tuyệt vời! Nhà hàng đã được thông báo. Hẹn gặp bạn!
+                    {t("success.subtitle")}
                 </Text>
 
                 {/* Restaurant Card */}
@@ -73,7 +75,7 @@ export default function BookingSuccessScreen() {
                             </View>
                             <View style={s.restaurantTitleWrap}>
                                 <Text style={s.restaurantName}>{restaurantName}</Text>
-                                <Text style={s.statusText}>Đã xác nhận</Text>
+                                <Text style={s.statusText}>{t("success.statusConfirmed")}</Text>
                             </View>
                         </View>
 
@@ -81,40 +83,40 @@ export default function BookingSuccessScreen() {
                         <View style={s.detailsGrid}>
                             <View style={s.detailBox}>
                                 <Ionicons name="restaurant-outline" size={22} color="#6B7280" />
-                                <Text style={s.detailLabel}>Bàn</Text>
+                                <Text style={s.detailLabel}>{t("success.detail.table")}</Text>
                                 <Text style={s.detailValue}>{tableName}</Text>
                             </View>
 
                             <View style={s.detailBox}>
                                 <Ionicons name="calendar-outline" size={22} color="#6B7280" />
-                                <Text style={s.detailLabel}>Ngày</Text>
+                                <Text style={s.detailLabel}>{t("success.detail.date")}</Text>
                                 <Text style={s.detailValue}>{date}</Text>
                             </View>
 
                             <View style={s.detailBox}>
                                 <Ionicons name="time-outline" size={22} color="#6B7280" />
-                                <Text style={s.detailLabel}>Giờ</Text>
+                                <Text style={s.detailLabel}>{t("success.detail.time")}</Text>
                                 <Text style={s.detailValue}>{time}</Text>
                             </View>
 
                             <View style={s.detailBox}>
                                 <Ionicons name="people-outline" size={22} color="#6B7280" />
-                                <Text style={s.detailLabel}>Khách</Text>
-                                <Text style={s.detailValue}>{partySize} người</Text>
+                                <Text style={s.detailLabel}>{t("success.detail.guests")}</Text>
+                                <Text style={s.detailValue}>{partySize} {t("common.peopleUnit")}</Text>
                             </View>
                         </View>
 
                         {/* Payment Info */}
                         <View style={s.paymentRow}>
-                            <Text style={s.paymentLabel}>Đã thanh toán cọc</Text>
+                            <Text style={s.paymentLabel}>{t("success.payment")}</Text>
                             <Text style={s.paymentValue}>
-                                {(parseInt(deposit) / 1000).toFixed(0)}.000đ
+                                {(parseInt(deposit)).toLocaleString(locale)}đ
                             </Text>
                         </View>
 
                         {/* Booking ID */}
                         <View style={s.bookingIdRow}>
-                            <Text style={s.bookingIdLabel}>Mã đặt bàn</Text>
+                            <Text style={s.bookingIdLabel}>{t("success.bookingId")}</Text>
                             <Text style={s.bookingIdValue}>#{bookingId}</Text>
                         </View>
                     </View>
@@ -124,9 +126,9 @@ export default function BookingSuccessScreen() {
                 <View style={s.rewardBanner}>
                     <Ionicons name="star" size={28} color="#F59E0B" />
                     <View style={s.rewardText}>
-                        <Text style={s.rewardTitle}>+200 điểm Amble!</Text>
+                        <Text style={s.rewardTitle}>{t("success.rewardTitle")}</Text>
                         <Text style={s.rewardSubtitle}>
-                            Hoàn tất đặt bàn • Tiếp tục kiếm điểm
+                            {t("success.rewardSubtitle")}
                         </Text>
                     </View>
                 </View>
@@ -147,7 +149,7 @@ export default function BookingSuccessScreen() {
                         start={{ x: 0, y: 0 }}
                         end={{ x: 1, y: 0 }}
                     >
-                        <Text style={s.primaryBtnText}>Xem Đặt Bàn</Text>
+                        <Text style={s.primaryBtnText}>{t("success.viewBookings")}</Text>
                     </LinearGradient>
                 </TouchableOpacity>
 
@@ -156,7 +158,7 @@ export default function BookingSuccessScreen() {
                     onPress={() => router.push("/(tabs)/")}
                     activeOpacity={0.8}
                 >
-                    <Text style={s.secondaryBtnText}>Về Trang Chủ</Text>
+                    <Text style={s.secondaryBtnText}>{t("success.backHome")}</Text>
                 </TouchableOpacity>
             </View>
         </SafeAreaView>

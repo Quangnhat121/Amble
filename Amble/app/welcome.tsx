@@ -13,10 +13,12 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Colors, Spacing, BorderRadius, Typography } from '../constants/theme';
 import { Ionicons } from '@expo/vector-icons';
+import { useI18n } from '../hooks/use-i18n';
 const { width, height } = Dimensions.get('window');
 
 export default function WelcomeScreen() {
   const router = useRouter();
+  const { t } = useI18n();
 
   // Fade + slide animations
   const logoAnim = useRef(new Animated.Value(0)).current;
@@ -99,18 +101,18 @@ export default function WelcomeScreen() {
 
         {/* Headline */}
         <Animated.Text style={[styles.headline, makeSlideUp(headlineAnim)]}>
-          Không chỉ ăn uống.{'\n'}Trải nghiệm của bạn.
+          {t("welcome.headline")}
         </Animated.Text>
 
         {/* Tagline */}
         <Animated.Text style={[styles.tagline, makeSlideUp(taglineAnim)]}>
-          🇻🇳 Vietnam's #1 dining app
+          🇻🇳 {t("welcome.tagline")}
         </Animated.Text>
       </View>
 
       {/* ── Bottom card sheet ──────────────────────── */}
       <View style={styles.sheet}>
-        <Text style={styles.sheetPrompt}>Bạn muốn đăng nhập với tư cách gì?</Text>
+        <Text style={styles.sheetPrompt}>{t("welcome.prompt")}</Text>
 
         {/* Customer card */}
         <Animated.View style={makeSlideUp(card1Anim)}>
@@ -131,8 +133,8 @@ export default function WelcomeScreen() {
             </View>
 
             <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Khách Hàng</Text>
-              <Text style={styles.cardSubtitle}>Tìm kiếm & đặt bàn nhà hàng</Text>
+              <Text style={styles.cardTitle}>{t("welcome.customer.title")}</Text>
+              <Text style={styles.cardSubtitle}>{t("welcome.customer.subtitle")}</Text>
             </View>
 
             <Text style={styles.cardArrow}>›</Text>
@@ -153,8 +155,8 @@ export default function WelcomeScreen() {
             </View>
 
             <View style={styles.cardText}>
-              <Text style={[styles.cardTitle, { color: '#1A1A1A' }]}>Đối Tác Nhà Hàng</Text>
-              <Text style={styles.cardSubtitle}>Quản lý nhà hàng & đặt bàn</Text>
+              <Text style={[styles.cardTitle, { color: '#1A1A1A' }]}>{t("welcome.partner.title")}</Text>
+              <Text style={styles.cardSubtitle}>{t("welcome.partner.subtitle")}</Text>
             </View>
 
             <Text style={[styles.cardArrow, { color: '#999' }]}>›</Text>
@@ -164,7 +166,7 @@ export default function WelcomeScreen() {
         {/* Divider */}
         <Animated.View style={[styles.dividerRow, makeSlideUp(dividerAnim)]}>
           <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>hoặc</Text>
+          <Text style={styles.dividerText}>{t("welcome.or")}</Text>
           <View style={styles.dividerLine} />
         </Animated.View>
 
@@ -175,7 +177,7 @@ export default function WelcomeScreen() {
             onPress={() => router.push('/(auth)/register')}
             activeOpacity={0.8}
           >
-            <Text style={styles.registerBtnText}>Đăng Ký miễn phí</Text>
+            <Text style={styles.registerBtnText}>{t("welcome.register")}</Text>
           </TouchableOpacity>
         </Animated.View>
       </View>
