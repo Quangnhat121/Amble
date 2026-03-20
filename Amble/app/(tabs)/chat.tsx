@@ -9,6 +9,7 @@ import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { ambleAI, AISession, DEFAULT_SESSION, TableCard, QuickReply } from "@/services/ambleAI";
 import { ChatMessage } from "@/types/chat";
+import { useI18n } from "../../hooks/use-i18n";
 
 const PRIMARY = "#FF6B35";
 const { width: SW } = Dimensions.get("window");
@@ -24,14 +25,15 @@ function TableCardItem({
     draft: any;
     onBook: (card: TableCard) => void;
 }) {
+    const { t } = useI18n();
     const [showGallery, setShowGallery] = useState(false);
     const [galleryIdx, setGalleryIdx] = useState(0);
 
     const typeConfig: Record<string, { label: string; color: string; bg: string }> = {
         vip:     { label: "✨ VIP",      color: "#9333EA", bg: "#FAF5FF" },
-        view:    { label: "🌆 View đẹp", color: "#3B82F6", bg: "#EFF6FF" },
-        regular: { label: "🍽️ Thường",  color: "#22C55E", bg: "#F0FDF4" },
-        standard:{ label: "🍽️ Thường",  color: "#22C55E", bg: "#F0FDF4" },
+        view:    { label: "🌆 " + t("table.type.view"), color: "#3B82F6", bg: "#EFF6FF" },
+        regular: { label: "🍽️ " + t("table.type.standard"),  color: "#22C55E", bg: "#F0FDF4" },
+        standard:{ label: "🍽️ " + t("table.type.standard"),  color: "#22C55E", bg: "#F0FDF4" },
     };
     const cfg = typeConfig[card.tableType] || typeConfig.regular;
     const allImages = [
@@ -84,7 +86,7 @@ function TableCardItem({
                     <Text style={tc.tableName}>{card.tableName}</Text>
                     <View style={tc.availBadge}>
                         <View style={tc.availDot} />
-                        <Text style={tc.availText}>Còn trống</Text>
+                        <Text style={tc.availText}>{t("chat.tableAvailable")}</Text>
                     </View>
                 </View>
 
@@ -108,11 +110,11 @@ function TableCardItem({
                     <View style={tc.footerLeft}>
                         <View style={tc.metaItem}>
                             <Ionicons name="people-outline" size={13} color="#9CA3AF" />
-                            <Text style={tc.metaText}>{card.capacity.min}–{card.capacity.max} người</Text>
+                            <Text style={tc.metaText}>{card.capacity.min}–{card.capacity.max} {t("common.peopleUnit")}</Text>
                         </View>
                         <View style={tc.metaItem}>
                             <Ionicons name="wallet-outline" size={13} color="#9CA3AF" />
-                            <Text style={tc.metaText}>Cọc {(card.deposit / 1000).toFixed(0)}k</Text>
+                            <Text style={tc.metaText}>{t("chat.deposit")} {(card.deposit / 1000).toFixed(0)}k</Text>
                         </View>
                     </View>
 
@@ -127,7 +129,7 @@ function TableCardItem({
                             style={tc.bookBtnInner}
                             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                         >
-                            <Text style={tc.bookBtnText}>Chọn bàn này</Text>
+                            <Text style={tc.bookBtnText}>{t("chat.selectTable")}</Text>
                             <Ionicons name="arrow-forward" size={14} color="#fff" />
                         </LinearGradient>
                     </TouchableOpacity>
@@ -180,7 +182,7 @@ function TableCardItem({
                             activeOpacity={0.85}
                         >
                             <LinearGradient colors={["#FF6B35", "#FFD700"]} style={gal.bookBtnInner} start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}>
-                                <Text style={gal.bookBtnText}>Đặt bàn này ngay</Text>
+                                <Text style={gal.bookBtnText}>{t("chat.bookNow")}</Text>
                             </LinearGradient>
                         </TouchableOpacity>
                     </SafeAreaView>
@@ -195,11 +197,12 @@ function TableCardItem({
 export default function ChatScreen() {
     const router = useRouter();
     const flatListRef = useRef<FlatList>(null);
+    const { t } = useI18n();
 
     const [messages, setMessages] = useState<ChatMessage[]>([
         {
             id: "welcome",
-            text: "Xin chào! Mình là **Amble AI**.\n\nMình có thể giúp bạn tìm nhà hàng và đặt bàn chỉ trong vài bước.\n\nBạn muốn:\n• Tìm nhà hàng theo sở thích\n• Đặt bàn nhanh qua chat\n\nNhắn gì đó để bắt đầu nhé! 🍽️",
+            text: t("chat.welcome"),
             sender: "ai",
             timestamp: new Date(),
         },
@@ -247,7 +250,7 @@ export default function ChatScreen() {
         } catch (err) {
             setMessages(prev => [...prev, {
                 id: `err-${Date.now()}`,
-                text: "⚠️ Có lỗi xảy ra, bạn thử lại nhé!",
+                text: t("chat.error"),
                 sender: "ai",
                 timestamp: new Date(),
             }]);
@@ -369,10 +372,10 @@ export default function ChatScreen() {
 
     // ── Initial quick suggestions ────────────────────────
     const suggestions = [
-        "Tìm nhà hàng gần đây",
-        "Đặt bàn hẹn hò",
-        "Đặt bàn gia đình",
-        "Nhà hàng họp mặt",
+        t("chat.suggestion.nearby"),
+        t("chat.suggestion.date"),
+        t("chat.suggestion.family"),
+        t("chat.suggestion.meetup"),
     ];
 
     return (
@@ -388,16 +391,16 @@ export default function ChatScreen() {
                         <Ionicons name="sparkles" size={18} color="#FF6B35" />
                     </View>
                     <View>
-                        <Text style={s.headerTitle}>Amble AI</Text>
+                        <Text style={s.headerTitle}>{t("chat.headerTitle")}</Text>
                         <View style={s.headerOnline}>
                             <View style={s.onlineDot} />
-                            <Text style={s.headerSub}>Luôn sẵn sàng hỗ trợ</Text>
+                            <Text style={s.headerSub}>{t("chat.headerReady")}</Text>
                         </View>
                     </View>
                 </View>
                 <TouchableOpacity
                     onPress={() => { setSession(DEFAULT_SESSION); setMessages([{
-                        id: `reset-${Date.now()}`, text: "🔄 Đã reset! Bạn muốn tìm gì?",
+                        id: `reset-${Date.now()}`, text: t("chat.reset"),
                         sender: "ai", timestamp: new Date(),
                     }]); }}
                     style={s.resetBtn}
@@ -424,7 +427,7 @@ export default function ChatScreen() {
                     </LinearGradient>
                     <View style={s.typingBubble}>
                         <ActivityIndicator size="small" color={PRIMARY} />
-                        <Text style={s.typingText}>Đang tìm kiếm...</Text>
+                        <Text style={s.typingText}>{t("chat.typing")}</Text>
                     </View>
                 </View>
             )}
@@ -444,7 +447,7 @@ export default function ChatScreen() {
                 <View style={s.inputWrap}>
                     <TextInput
                         style={s.input}
-                        placeholder="Nhắn Amble AI..."
+                        placeholder={t("chat.inputPlaceholder")}
                         placeholderTextColor="#9CA3AF"
                         value={inputText}
                         onChangeText={setInputText}

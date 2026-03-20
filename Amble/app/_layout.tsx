@@ -39,9 +39,10 @@ export default function RootLayout() {
       pathname === "/" ||
       pathname.startsWith("/explore");
     const onWelcome = pathname === "/welcome";
+    const onLanguage = pathname === "/language";
 
     // ── Không redirect khi đang ở các màn hình con ──────────
-    if (onWelcome) return;
+    if (onWelcome || onLanguage) return;
     if (pathname.startsWith("/restaurant/")) return;  // detail nhà hàng
     if (pathname.startsWith("/booking/")) return;     // flow đặt bàn
 
@@ -59,7 +60,7 @@ export default function RootLayout() {
     }
 
     if (!inAuthGroup && !inPartnerAuthGroup) {
-      router.replace("/welcome");
+      router.replace("/language");
     }
   }, [isReady, isAuthenticated, isPartnerAuthenticated, pathname]);
 

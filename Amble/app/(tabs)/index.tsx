@@ -9,6 +9,7 @@ import { useRouter } from "expo-router";
 import { useAuthStore } from "../../store/authStore";
 import { restaurantAPI } from "../../services/api";
 import { Ionicons } from "@expo/vector-icons";
+import { useI18n } from "../../hooks/use-i18n";
 
 type IconName = keyof typeof Ionicons.glyphMap;
 
@@ -54,24 +55,7 @@ interface Category {
 }
 
 // ─── Constants ────────────────────────────────────────────
-const CATEGORIES: Category[] = [
-  { icon: "home", label: "Gần đây", key: "local" },
-  { icon: "heart", label: "Hẹn hò", key: "date" },
-  { icon: "people", label: "Gia đình", key: "family" },
-  { icon: "briefcase", label: "Công việc", key: "business" },
-  { icon: "people-circle", label: "Nhóm bạn", key: "group" },
-  { icon: "gift", label: "Sinh nhật", key: "celebration" },
-];
-
-const QUICK_TAGS = ["Món Việt", "Đồ Âu", "Rooftop", "Nhật Bản", "Lẩu nướng"];
-
 const PRICE_OPTIONS = ["$", "$$", "$$$"];
-
-const SORT_OPTIONS = [
-  { key: "rating", label: "Đánh giá cao nhất" },
-  { key: "reviews", label: "Nhiều đánh giá nhất" },
-  { key: "name", label: "Tên A-Z" },
-];
 
 const FALLBACK =
   "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=600&q=80";
@@ -88,6 +72,7 @@ const RestaurantCardFull = React.memo(
     favorites: string[];
     onToggleFav: (id: string) => void;
   }) => {
+    const { t } = useI18n();
     const isFav = favorites.includes(item._id);
     const router = useRouter();
 
@@ -115,7 +100,7 @@ const RestaurantCardFull = React.memo(
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Text style={cardFull.badgeText}>Yêu thích</Text>
+              <Text style={cardFull.badgeText}>{t("badge.favourite")}</Text>
             </LinearGradient>
           )}
           {!item.isFeatured && item.subscriptionPackage === "premium" && (
@@ -125,7 +110,7 @@ const RestaurantCardFull = React.memo(
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 0 }}
             >
-              <Text style={cardFull.badgeText}>Xu hướng</Text>
+              <Text style={cardFull.badgeText}>{t("badge.trending")}</Text>
             </LinearGradient>
           )}
 
@@ -159,7 +144,9 @@ const RestaurantCardFull = React.memo(
             <View style={cardFull.ratingRow}>
               <Text style={{ fontSize: 13 }}>⭐</Text>
               <Text style={cardFull.ratingNum}>{item.rating.toFixed(1)}</Text>
-              <Text style={cardFull.ratingCount}>({item.reviewCount} đánh giá)</Text>
+              <Text style={cardFull.ratingCount}>
+                ({item.reviewCount} {t("label.reviews")})
+              </Text>
             </View>
             <View style={cardFull.cityRow}>
               <Text style={cardFull.cityText}>{item.city}</Text>
@@ -171,7 +158,7 @@ const RestaurantCardFull = React.memo(
               {item.location || item.city}
             </Text>
             {item.hasParking && (
-              <Text style={cardFull.parking}>Có bãi đậu xe</Text>
+              <Text style={cardFull.parking}>{t("label.parking")}</Text>
             )}
             <Text style={cardFull.hours}>{item.openTime}–{item.closeTime}</Text>
           </View>
@@ -256,10 +243,11 @@ const RestaurantCardCompact = React.memo(
 //  Section wrapper
 // ═══════════════════════════════════════════════════════════
 const Section = ({
-  title, onViewAll, children,
+  title, onViewAll, viewAllLabel, children,
 }: {
   title: string;
   onViewAll?: () => void;
+  viewAllLabel?: string;
   children: React.ReactNode;
 }) => (
   <View style={sec.wrap}>
@@ -267,7 +255,7 @@ const Section = ({
       <Text style={sec.title}>{title}</Text>
       {onViewAll && (
         <TouchableOpacity onPress={onViewAll} activeOpacity={0.7}>
-          <Text style={sec.link}>Xem tất cả</Text>
+          <Text style={sec.link}>{viewAllLabel}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -296,6 +284,29 @@ const SkeletonCard = () => (
 // ═══════════════════════════════════════════════════════════
 export default function HomeScreen() {
   const { user } = useAuthStore();
+  const { t } = useI18n();
+  const categories: Category[] = [
+    { icon: "home", label: t("category.local"), key: "local" },
+    { icon: "heart", label: t("category.date"), key: "date" },
+    { icon: "people", label: t("category.family"), key: "family" },
+    { icon: "briefcase", label: t("category.business"), key: "business" },
+    { icon: "people-circle", label: t("category.group"), key: "group" },
+    { icon: "gift", label: t("category.celebration"), key: "celebration" },
+  ];
+
+  const quickTags = [
+    t("tag.vietnamese"),
+    t("tag.european"),
+    t("tag.rooftop"),
+    t("tag.japanese"),
+    t("tag.hotpot"),
+  ];
+
+  const sortOptions = [
+    { key: "rating", label: t("sort.rating") },
+    { key: "reviews", label: t("sort.reviews") },
+    { key: "name", label: t("sort.name") },
+  ];
 
   const [allRestaurants, setAllRestaurants] = useState<Restaurant[]>([]);
   const [featured, setFeatured] = useState<Restaurant[]>([]);
@@ -419,13 +430,13 @@ export default function HomeScreen() {
 
   const greeting = () => {
     const h = new Date().getHours();
-    if (h < 12) return "buổi sáng";
-    if (h < 18) return "buổi chiều";
-    return "buổi tối";
+    if (h < 12) return t("home.greetingMorning");
+    if (h < 18) return t("home.greetingAfternoon");
+    return t("home.greetingEvening");
   };
 
-  const activeCat = CATEGORIES.find((c) => c.key === activeCategory);
-  const allSectionTitle = activeCat ? `${activeCat.label}` : "Tất cả nhà hàng";
+  const activeCat = categories.find((c) => c.key === activeCategory);
+  const allSectionTitle = activeCat ? `${activeCat.label}` : t("home.allRestaurants");
 
   // ── Loading ────────────────────────────────────────────────
   if (loading) {
@@ -502,9 +513,11 @@ export default function HomeScreen() {
           {/* Greeting */}
           <View style={styles.greetingWrap}>
             <Text style={styles.greetingName}>
-              {user ? `Chào ${greeting()}, ${user.fullName?.split(" ").pop()}!` : "Chào bạn!"}
+              {user
+                ? t("home.greetingUser", { timeOfDay: greeting(), name: user.fullName?.split(" ").pop() })
+                : t("home.greetingGuest")}
             </Text>
-            <Text style={styles.greetingSub}>Hôm nay muốn ăn gì?</Text>
+            <Text style={styles.greetingSub}>{t("home.greetingSubtitle")}</Text>
           </View>
 
           {/* Search bar */}
@@ -512,7 +525,7 @@ export default function HomeScreen() {
             <Ionicons name="search" size={16} color="#6B7280" />
             <TextInput
               style={styles.searchInput}
-              placeholder="Tìm nhà hàng, món ăn, địa điểm..."
+              placeholder={t("home.searchPlaceholder")}
               placeholderTextColor={TEXT_MUTED}
               value={search}
               onChangeText={setSearch}
@@ -544,7 +557,7 @@ export default function HomeScreen() {
             showsHorizontalScrollIndicator={false}
             contentContainerStyle={styles.quickTagsRow}
           >
-            {QUICK_TAGS.map((tag) => {
+            {quickTags.map((tag) => {
               const active = activeTag === tag;
               return (
                 <TouchableOpacity
@@ -564,7 +577,7 @@ export default function HomeScreen() {
           {/* Filter panel */}
           {showFilters && (
             <View style={styles.filterPanel}>
-              <Text style={styles.filterLabel}>Mức giá</Text>
+              <Text style={styles.filterLabel}>{t("home.filterPrice")}</Text>
               <View style={styles.filterRow}>
                 {PRICE_OPTIONS.map((p) => {
                   const active = activePrice === p;
@@ -582,9 +595,9 @@ export default function HomeScreen() {
                 })}
               </View>
 
-              <Text style={styles.filterLabel}>Sắp xếp</Text>
+              <Text style={styles.filterLabel}>{t("home.filterSort")}</Text>
               <View style={styles.filterRow}>
-                {SORT_OPTIONS.map((s) => {
+                {sortOptions.map((s) => {
                   const active = activeSort === s.key;
                   return (
                     <TouchableOpacity
@@ -602,7 +615,7 @@ export default function HomeScreen() {
 
               {hasActiveFilter && (
                 <TouchableOpacity style={styles.clearBtn} onPress={clearFilters}>
-                  <Text style={styles.clearBtnText}>Xóa bộ lọc</Text>
+                  <Text style={styles.clearBtnText}>{t("home.clearFilters")}</Text>
                 </TouchableOpacity>
               )}
             </View>
@@ -611,7 +624,7 @@ export default function HomeScreen() {
 
         {/* ════ CATEGORIES ════ */}
         <View style={styles.categoriesGrid}>
-          {CATEGORIES.map((cat) => {
+          {categories.map((cat) => {
             const isActive = activeCategory === cat.key;
             return (
               <TouchableOpacity
@@ -644,14 +657,14 @@ export default function HomeScreen() {
 
         {/* Khi đang search/filter: ẩn section featured/date/budget, chỉ show kết quả */}
         {hasActiveFilter ? (
-          <Section title={`Kết quả tìm kiếm (${allList.length})`}>
+          <Section title={t("home.searchResults", { count: allList.length })}>
             {allList.length === 0 ? (
               <View style={styles.emptyBox}>
                 <Text style={{ fontSize: 48 }}>🍽️</Text>
-                <Text style={styles.emptyTitle}>Không tìm thấy nhà hàng</Text>
-                <Text style={styles.emptyText}>Thử từ khóa hoặc bộ lọc khác</Text>
+                <Text style={styles.emptyTitle}>{t("home.noResultsTitle")}</Text>
+                <Text style={styles.emptyText}>{t("home.noResultsSubtitle")}</Text>
                 <TouchableOpacity style={styles.clearBtn2} onPress={clearFilters}>
-                  <Text style={styles.clearBtnText}>Xóa bộ lọc</Text>
+                  <Text style={styles.clearBtnText}>{t("home.clearFilters")}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -671,7 +684,7 @@ export default function HomeScreen() {
           <>
             {/* ════ FEATURED ════ */}
             {featured.length > 0 && (
-              <Section title="Đề xuất cho bạn" onViewAll={() => {}}>
+              <Section title={t("home.featured")} onViewAll={() => {}} viewAllLabel={t("common.viewAll")}>
                 <View style={styles.px20}>
                   {featured.slice(0, 3).map((r) => (
                     <RestaurantCardFull
@@ -687,7 +700,7 @@ export default function HomeScreen() {
 
             {/* ════ HẸN HÒ ════ */}
             {forDate.length > 0 && (
-              <Section title="Địa điểm hẹn hò" onViewAll={() => {}}>
+              <Section title={t("home.dateSpots")} onViewAll={() => {}} viewAllLabel={t("common.viewAll")}>
                 <FlatList
                   data={forDate}
                   horizontal

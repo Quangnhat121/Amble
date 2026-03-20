@@ -16,6 +16,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { Colors, Spacing, BorderRadius, Typography } from "../../constants/theme";
 import { usePartnerAuthStore } from "../../store/partnerAuthStore";
+import { useI18n } from "../../hooks/use-i18n";
 
 const PARTNER_GRAD: [string, string] = ["#FF6B35", "#FFD700"];
 
@@ -23,6 +24,7 @@ type Step = "account" | "restaurant" | "package";
 
 export default function PartnerRegisterScreen() {
   const router = useRouter();
+  const { t } = useI18n();
   const { register, isLoading } = usePartnerAuthStore();
   const [step, setStep] = useState<Step>("account");
 
@@ -70,7 +72,7 @@ export default function PartnerRegisterScreen() {
       });
       router.replace("/(partner)/dashboard");
     } catch (err: any) {
-      Alert.alert("Đăng ký thất bại", err.message);
+      Alert.alert(t("auth.registerFailed"), err.message);
     }
   };
 
@@ -86,27 +88,25 @@ export default function PartnerRegisterScreen() {
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
 
-          <Text style={styles.headerTitle}>Đăng ký đối tác</Text>
-          <Text style={styles.headerSubtitle}>
-            Phát triển nhà hàng cùng Amble
-          </Text>
+          <Text style={styles.headerTitle}>{t("partner.register.title")}</Text>
+          <Text style={styles.headerSubtitle}>{t("partner.register.subtitle")}</Text>
         </LinearGradient>
 
         <View style={styles.formContainer}>
           {step === "account" && (
             <>
-              <Text style={styles.sectionTitle}>Thông tin tài khoản</Text>
+              <Text style={styles.sectionTitle}>{t("partner.register.accountInfo")}</Text>
 
               <Field
-                label="Họ và tên"
+                label={t("partner.register.ownerName")}
                 icon="person-outline"
                 value={form.ownerName}
                 onChangeText={(v) => update("ownerName", v)}
-                placeholder="Nguyễn Văn A"
+                placeholder={t("partner.register.ownerPlaceholder")}
               />
 
               <Field
-                label="Email"
+                label={t("auth.email")}
                 icon="mail-outline"
                 value={form.email}
                 onChangeText={(v) => update("email", v)}
@@ -114,16 +114,16 @@ export default function PartnerRegisterScreen() {
               />
 
               <Field
-                label="Số điện thoại"
+                label={t("partner.register.phone")}
                 icon="call-outline"
                 value={form.phone}
                 onChangeText={(v) => update("phone", v)}
-                placeholder="0901234567"
+                placeholder={t("partner.register.phonePlaceholder")}
               />
 
               {/* PASSWORD */}
               <View style={styles.inputGroup}>
-                <Text style={styles.label}>Mật khẩu</Text>
+                <Text style={styles.label}>{t("auth.password")}</Text>
 
                 <View style={styles.inputWrapper}>
                   <Ionicons
@@ -136,7 +136,7 @@ export default function PartnerRegisterScreen() {
                   <TextInput
                     style={styles.input}
                     secureTextEntry={!showPassword}
-                    placeholder="Nhập mật khẩu"
+                    placeholder={t("partner.login.passwordPlaceholder")}
                     value={form.password}
                     onChangeText={(v) => update("password", v)}
                   />
@@ -155,7 +155,7 @@ export default function PartnerRegisterScreen() {
 
               <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
                 <LinearGradient colors={PARTNER_GRAD} style={styles.btnGradient}>
-                  <Text style={styles.btnText}>Tiếp theo</Text>
+                  <Text style={styles.btnText}>{t("partner.register.next")}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </>
@@ -163,43 +163,43 @@ export default function PartnerRegisterScreen() {
 
           {step === "restaurant" && (
             <>
-              <Text style={styles.sectionTitle}>Thông tin nhà hàng</Text>
+              <Text style={styles.sectionTitle}>{t("partner.register.restaurantInfo")}</Text>
 
               <Field
-                label="Tên nhà hàng"
+                label={t("partner.register.restaurantName")}
                 icon="storefront-outline"
                 value={form.restaurantName}
                 onChangeText={(v) => update("restaurantName", v)}
-                placeholder="Nhà hàng ABC"
+                placeholder={t("partner.register.restaurantPlaceholder")}
               />
 
               <Field
-                label="Địa chỉ"
+                label={t("partner.register.address")}
                 icon="location-outline"
                 value={form.restaurantAddress}
                 onChangeText={(v) => update("restaurantAddress", v)}
-                placeholder="123 Nguyễn Huệ"
+                placeholder={t("partner.register.addressPlaceholder")}
               />
 
               <Field
-                label="Thành phố"
+                label={t("partner.register.city")}
                 icon="business-outline"
                 value={form.restaurantCity}
                 onChangeText={(v) => update("restaurantCity", v)}
-                placeholder="Hồ Chí Minh"
+                placeholder={t("partner.register.cityPlaceholder")}
               />
 
               <Field
-                label="Ẩm thực"
+                label={t("partner.register.cuisine")}
                 icon="restaurant-outline"
                 value={form.cuisine}
                 onChangeText={(v) => update("cuisine", v)}
-                placeholder="Việt Nam"
+                placeholder={t("partner.register.cuisinePlaceholder")}
               />
 
               <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
                 <LinearGradient colors={PARTNER_GRAD} style={styles.btnGradient}>
-                  <Text style={styles.btnText}>Tiếp theo</Text>
+                  <Text style={styles.btnText}>{t("partner.register.next")}</Text>
                 </LinearGradient>
               </TouchableOpacity>
             </>
@@ -207,7 +207,7 @@ export default function PartnerRegisterScreen() {
 
           {step === "package" && (
             <>
-              <Text style={styles.sectionTitle}>Hoàn tất đăng ký</Text>
+              <Text style={styles.sectionTitle}>{t("partner.register.complete")}</Text>
 
               <TouchableOpacity
                 style={styles.nextBtn}
@@ -218,7 +218,7 @@ export default function PartnerRegisterScreen() {
                   {isLoading ? (
                     <ActivityIndicator color="#fff" />
                   ) : (
-                    <Text style={styles.btnText}>Đăng ký</Text>
+                    <Text style={styles.btnText}>{t("auth.register")}</Text>
                   )}
                 </LinearGradient>
               </TouchableOpacity>
@@ -226,11 +226,11 @@ export default function PartnerRegisterScreen() {
           )}
 
           <View style={styles.loginRow}>
-            <Text style={styles.loginText}>Đã có tài khoản? </Text>
+            <Text style={styles.loginText}>{t("auth.haveAccount")} </Text>
 
             <Link href="/(partner-auth)/partner-login" asChild>
               <TouchableOpacity>
-                <Text style={styles.loginLink}>Đăng nhập</Text>
+                <Text style={styles.loginLink}>{t("auth.loginNow")}</Text>
               </TouchableOpacity>
             </Link>
           </View>

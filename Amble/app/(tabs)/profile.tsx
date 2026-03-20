@@ -9,6 +9,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { useAuthStore } from '../../store/authStore';
 import { userAPI, bookingAPI } from '../../services/api';
+import { useI18n } from '../../hooks/use-i18n';
 
 const PRIMARY  = '#FF6B35';
 const GRAD: [string, string] = ['#FF6B35', '#FFD700'];
@@ -105,6 +106,7 @@ const fo = StyleSheet.create({
 export default function ProfileScreen() {
   const router = useRouter();
   const { user, updateUser, logout } = useAuthStore();
+  const { t } = useI18n();
 
   const [editVisible,   setEditVisible]   = useState(false);
   const [pwVisible,     setPwVisible]     = useState(false);
@@ -137,26 +139,26 @@ export default function ProfileScreen() {
   }, [user?._id]);
 
   const handleSaveProfile = async () => {
-    if (!editForm.fullName.trim()) { Alert.alert('Lỗi', 'Họ tên không được để trống'); return; }
+    if (!editForm.fullName.trim()) { Alert.alert(t('auth.error'), t('profile.validation.fullName')); return; }
     setSaving(true);
     try {
       await updateUser(editForm);
       setEditVisible(false);
-      Alert.alert('Thành công', 'Hồ sơ đã được cập nhật!');
-    } catch (e: any) { Alert.alert('Lỗi', e.message); }
+      Alert.alert(t('profile.alert.success'), t('profile.alert.profileUpdated'));
+    } catch (e: any) { Alert.alert(t('auth.error'), e.message); }
     finally { setSaving(false); }
   };
 
   const handleChangePassword = async () => {
-    if (!pwForm.currentPassword || !pwForm.newPassword) { Alert.alert('Lỗi', 'Vui lòng điền đầy đủ'); return; }
-    if (pwForm.newPassword !== pwForm.confirmPassword)  { Alert.alert('Lỗi', 'Mật khẩu không khớp'); return; }
+    if (!pwForm.currentPassword || !pwForm.newPassword) { Alert.alert(t('auth.error'), t('profile.validation.passwordRequired')); return; }
+    if (pwForm.newPassword !== pwForm.confirmPassword)  { Alert.alert(t('auth.error'), t('profile.validation.passwordMismatch')); return; }
     setSaving(true);
     try {
       await userAPI.changePassword({ currentPassword: pwForm.currentPassword, newPassword: pwForm.newPassword });
       setPwVisible(false);
       setPwForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      Alert.alert('Thành công', 'Đổi mật khẩu thành công!');
-    } catch (e: any) { Alert.alert('Lỗi', e.message); }
+      Alert.alert(t('profile.alert.success'), t('profile.alert.passwordChanged'));
+    } catch (e: any) { Alert.alert(t('auth.error'), e.message); }
     finally { setSaving(false); }
   };
 
@@ -184,7 +186,7 @@ export default function ProfileScreen() {
 
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-              <Text style={s.name} numberOfLines={1}>{user?.fullName || 'Người dùng'}</Text>
+              <Text style={s.name} numberOfLines={1}>{user?.fullName || t('profile.userFallback')}</Text>
               <TouchableOpacity onPress={() => setEditVisible(true)}>
                 <Ionicons name="create-outline" size={16} color="rgba(255,255,255,0.85)" />
               </TouchableOpacity>
@@ -196,11 +198,11 @@ export default function ProfileScreen() {
 
         {/* Stats — 3 columns inside header */}
         <View style={s.statsRow}>
-          <StatCard label="Đặt bàn"   value={bookingCount} />
+          <StatCard label={t('profile.stats.bookings')}   value={bookingCount} />
           <View style={{ width: 8 }} />
-          <StatCard label="Đánh giá"  value={0} />
+          <StatCard label={t('profile.stats.reviews')}  value={0} />
           <View style={{ width: 8 }} />
-          <StatCard label="Yêu thích" value={0} />
+          <StatCard label={t('profile.stats.favorites')} value={0} />
         </View>
       </LinearGradient>
 
@@ -208,44 +210,44 @@ export default function ProfileScreen() {
       <View style={s.body}>
 
         {/* Đặt bàn */}
-        <Text style={s.sectionTitle}>ĐẶT BÀN</Text>
+        <Text style={s.sectionTitle}>{t('profile.section.booking')}</Text>
         <MenuItem
           icon="📋"
-          label="Lịch sử đặt bàn"
+          label={t('profile.menu.bookingHistory')}
           onPress={() => router.push('/booking/history' as any)}
         />
 
         {/* Tài khoản */}
-        <Text style={s.sectionTitle}>TÀI KHOẢN</Text>
+        <Text style={s.sectionTitle}>{t('profile.section.account')}</Text>
         <View style={s.group}>
           <MenuItem
             icon="👤"
-            label="Thông tin cá nhân"
-            sublabel={user?.phone || 'Chưa cập nhật'}
+            label={t('profile.menu.personalInfo')}
+            sublabel={user?.phone || t('profile.phoneNotSet')}
             onPress={() => setEditVisible(true)}
           />
           <MenuItem
             icon="🔒"
-            label="Đổi mật khẩu"
+            label={t('profile.menu.changePassword')}
             onPress={() => setPwVisible(true)}
           />
-          <MenuItem icon="🔔" label="Thông báo" sublabel="Đã bật" />
+          <MenuItem icon="🔔" label={t('profile.menu.notifications')} sublabel={t('profile.menu.notificationsOn')} />
         </View>
 
         {/* Hỗ trợ */}
-        <Text style={s.sectionTitle}>HỖ TRỢ</Text>
+        <Text style={s.sectionTitle}>{t('profile.section.support')}</Text>
         <View style={s.group}>
-          <MenuItem icon="❓" label="Trung tâm trợ giúp" />
-          <MenuItem icon="📄" label="Điều khoản sử dụng" />
-          <MenuItem icon="🛡️" label="Chính sách bảo mật" />
-          <MenuItem icon="⭐" label="Đánh giá ứng dụng"  />
+          <MenuItem icon="❓" label={t('profile.menu.helpCenter')} />
+          <MenuItem icon="📄" label={t('profile.menu.terms')} />
+          <MenuItem icon="🛡️" label={t('profile.menu.privacy')} />
+          <MenuItem icon="⭐" label={t('profile.menu.rateApp')}  />
         </View>
 
         {/* Đăng xuất */}
         <View style={{ marginTop: 8, marginBottom: 40 }}>
           <MenuItem
             icon="🚪"
-            label="Đăng xuất"
+            label={t('profile.menu.logout')}
             onPress={() => setLogoutVisible(true)}
             danger
           />
@@ -261,26 +263,26 @@ export default function ProfileScreen() {
         >
           <View style={mo.sheet}>
             <View style={mo.handle} />
-            <Text style={mo.title}>Chỉnh sửa hồ sơ</Text>
-            <Field label="Họ tên" placeholder="Nhập họ tên"
+            <Text style={mo.title}>{t('profile.editTitle')}</Text>
+            <Field label={t('profile.edit.fullName')} placeholder={t('profile.edit.fullNamePlaceholder')}
               value={editForm.fullName}
               onChangeText={(v: string) => setEditForm({ ...editForm, fullName: v })}
             />
-            <Field label="Số điện thoại" placeholder="Nhập số điện thoại"
+            <Field label={t('profile.edit.phone')} placeholder={t('profile.edit.phonePlaceholder')}
               value={editForm.phone}
               onChangeText={(v: string) => setEditForm({ ...editForm, phone: v })}
               keyboardType="phone-pad"
             />
-            <Field label="Địa chỉ" placeholder="Nhập địa chỉ"
+            <Field label={t('profile.edit.address')} placeholder={t('profile.edit.addressPlaceholder')}
               value={editForm.location}
               onChangeText={(v: string) => setEditForm({ ...editForm, location: v })}
             />
             <View style={mo.row}>
               <TouchableOpacity style={mo.cancelBtn} onPress={() => setEditVisible(false)}>
-                <Text style={mo.cancelText}>Huỷ</Text>
+                <Text style={mo.cancelText}>{t('profile.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={mo.saveBtn} onPress={handleSaveProfile} disabled={saving}>
-                {saving ? <ActivityIndicator color="#fff" /> : <Text style={mo.saveText}>Lưu</Text>}
+                {saving ? <ActivityIndicator color="#fff" /> : <Text style={mo.saveText}>{t('profile.save')}</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -295,28 +297,28 @@ export default function ProfileScreen() {
         >
           <View style={mo.sheet}>
             <View style={mo.handle} />
-            <Text style={mo.title}>Đổi mật khẩu</Text>
-            <Field label="Mật khẩu hiện tại" placeholder="Nhập mật khẩu hiện tại"
+            <Text style={mo.title}>{t('profile.changePasswordTitle')}</Text>
+            <Field label={t('profile.password.current')} placeholder={t('profile.password.currentPlaceholder')}
               value={pwForm.currentPassword}
               onChangeText={(v: string) => setPwForm({ ...pwForm, currentPassword: v })}
               secureTextEntry
             />
-            <Field label="Mật khẩu mới" placeholder="Nhập mật khẩu mới"
+            <Field label={t('profile.password.new')} placeholder={t('profile.password.newPlaceholder')}
               value={pwForm.newPassword}
               onChangeText={(v: string) => setPwForm({ ...pwForm, newPassword: v })}
               secureTextEntry
             />
-            <Field label="Xác nhận mật khẩu mới" placeholder="Nhập lại mật khẩu mới"
+            <Field label={t('profile.password.confirm')} placeholder={t('profile.password.confirmPlaceholder')}
               value={pwForm.confirmPassword}
               onChangeText={(v: string) => setPwForm({ ...pwForm, confirmPassword: v })}
               secureTextEntry
             />
             <View style={mo.row}>
               <TouchableOpacity style={mo.cancelBtn} onPress={() => setPwVisible(false)}>
-                <Text style={mo.cancelText}>Huỷ</Text>
+                <Text style={mo.cancelText}>{t('profile.cancel')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={mo.saveBtn} onPress={handleChangePassword} disabled={saving}>
-                {saving ? <ActivityIndicator color="#fff" /> : <Text style={mo.saveText}>Lưu</Text>}
+                {saving ? <ActivityIndicator color="#fff" /> : <Text style={mo.saveText}>{t('profile.save')}</Text>}
               </TouchableOpacity>
             </View>
           </View>
@@ -328,17 +330,17 @@ export default function ProfileScreen() {
         <View style={lo.overlay}>
           <View style={lo.card}>
             <Text style={{ fontSize: 52, textAlign: 'center' }}>👋</Text>
-            <Text style={lo.title}>Đăng xuất?</Text>
-            <Text style={lo.sub}>Bạn có chắc muốn đăng xuất không?</Text>
+            <Text style={lo.title}>{t('profile.logoutTitle')}</Text>
+            <Text style={lo.sub}>{t('profile.logoutMessage')}</Text>
             <View style={lo.row}>
               <TouchableOpacity style={lo.stayBtn} onPress={() => setLogoutVisible(false)}>
-                <Text style={lo.stayText}>Ở lại</Text>
+                <Text style={lo.stayText}>{t('profile.stay')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={lo.leaveBtn}
                 onPress={() => { setLogoutVisible(false); logout(); }}
               >
-                <Text style={lo.leaveText}>Đăng xuất</Text>
+                <Text style={lo.leaveText}>{t('profile.menu.logout')}</Text>
               </TouchableOpacity>
             </View>
           </View>

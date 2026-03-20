@@ -18,6 +18,7 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { restaurantAPI } from "../../services/api";
+import { useI18n } from "../../hooks/use-i18n";
 
 // ─── Design tokens ────────────────────────────────────────
 const PRIMARY = "#FF6B35";
@@ -70,16 +71,6 @@ interface Restaurant {
 }
 
 // ─── Helpers ──────────────────────────────────────────────
-const DAY_LABEL: Record<string, string> = {
-  mon: "T2",
-  tue: "T3",
-  wed: "T4",
-  thu: "T5",
-  fri: "T6",
-  sat: "T7",
-  sun: "CN",
-};
-
 const FALLBACK =
   "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&q=80";
 
@@ -169,6 +160,7 @@ const SocialBtn = ({
 //  DETAIL SCREEN
 export default function DetailScreen() {
   const router = useRouter();
+  const { t, language } = useI18n();
   const { id } = useLocalSearchParams<{ id: string }>();
 
   const [restaurant, setRestaurant] = useState<Restaurant | null>(null);
@@ -239,7 +231,7 @@ export default function DetailScreen() {
         />
         <View style={s.loadingWrap}>
           <ActivityIndicator size="large" color={PRIMARY} />
-          <Text style={s.loadingText}>Đang tải nhà hàng...</Text>
+          <Text style={s.loadingText}>{t("restaurant.loading")}</Text>
         </View>
       </SafeAreaView>
     );
@@ -252,13 +244,13 @@ export default function DetailScreen() {
         <StatusBar barStyle="dark-content" />
         <View style={s.errorWrap}>
           <Text style={{ fontSize: 52 }}>😕</Text>
-          <Text style={s.errorTitle}>Không tìm thấy</Text>
-          <Text style={s.errorText}>{error || "Nhà hàng không tồn tại"}</Text>
+          <Text style={s.errorTitle}>{t("restaurant.notFound")}</Text>
+          <Text style={s.errorText}>{error || t("restaurant.notFoundMessage")}</Text>
           <TouchableOpacity style={s.retryBtn} onPress={fetchDetail}>
-            <Text style={s.retryText}>Thử lại</Text>
+            <Text style={s.retryText}>{t("restaurant.retry")}</Text>
           </TouchableOpacity>
           <TouchableOpacity style={s.backLink} onPress={() => router.back()}>
-            <Text style={s.backLinkText}>← Quay lại</Text>
+            <Text style={s.backLinkText}>{t("restaurant.back")}</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -268,6 +260,10 @@ export default function DetailScreen() {
   const images = restaurant.images?.length > 0 ? restaurant.images : [FALLBACK];
   const open = isOpenNow(restaurant.openTime, restaurant.closeTime);
   const stars = Math.round(restaurant.rating);
+  const dayLabels: Record<string, string> =
+    language === "vi"
+      ? { mon: "T2", tue: "T3", wed: "T4", thu: "T5", fri: "T6", sat: "T7", sun: "CN" }
+      : { mon: "Mon", tue: "Tue", wed: "Wed", thu: "Thu", fri: "Fri", sat: "Sat", sun: "Sun" };
 
   // ── Main render ───────────────────────────────────────────
   return (
@@ -365,7 +361,7 @@ export default function DetailScreen() {
               end={{ x: 1, y: 0 }}
               pointerEvents="none"
             >
-              <Text style={s.heroBadgeText}>Được yêu thích</Text>
+              <Text style={s.heroBadgeText}>{t("restaurant.featured")}</Text>
             </LinearGradient>
           )}
 
@@ -402,7 +398,7 @@ export default function DetailScreen() {
                     { color: open ? "#22C55E" : "#EF4444" },
                   ]}
                 >
-                  {open ? "Đang mở" : "Đã đóng"}
+                  {open ? t("restaurant.open") : t("restaurant.closed")}
                 </Text>
               </View>
             </View>
@@ -450,7 +446,7 @@ export default function DetailScreen() {
               </View>
               <Text style={s.ratingNum}>{restaurant.rating.toFixed(1)}</Text>
               <Text style={s.ratingCount}>
-                ({restaurant.reviewCount} đánh giá)
+                ({restaurant.reviewCount} {t("restaurant.reviews")})
               </Text>
             </View>
           </View>
@@ -475,7 +471,7 @@ export default function DetailScreen() {
             <View style={s.statItem}>
               <Ionicons name="star" size={18} color="#F59E0B" />
               <Text style={s.statValue}>{restaurant.rating.toFixed(1)}</Text>
-              <Text style={s.statLabel}>Đánh giá</Text>
+              <Text style={s.statLabel}>{t("restaurant.stat.reviews")}</Text>
             </View>
 
             <View style={s.statDivider} />
@@ -487,7 +483,7 @@ export default function DetailScreen() {
                 color="#6B7280"
               />
               <Text style={s.statValue}>{restaurant.reviewCount}</Text>
-              <Text style={s.statLabel}>Lượt bình luận</Text>
+              <Text style={s.statLabel}>{t("restaurant.stat.comments")}</Text>
             </View>
 
             <View style={s.statDivider} />
@@ -495,7 +491,7 @@ export default function DetailScreen() {
             <View style={s.statItem}>
               <Ionicons name="time-outline" size={18} color="#6B7280" />
               <Text style={s.statValue}>{restaurant.openTime}</Text>
-              <Text style={s.statLabel}>Mở cửa</Text>
+              <Text style={s.statLabel}>{t("restaurant.stat.opening")}</Text>
             </View>
 
             {restaurant.hasParking && (
@@ -503,8 +499,8 @@ export default function DetailScreen() {
                 <View style={s.statDivider} />
                 <View style={s.statItem}>
                   <Ionicons name="car-outline" size={18} color="#6B7280" />
-                  <Text style={s.statValue}>Có</Text>
-                  <Text style={s.statLabel}>Bãi xe</Text>
+                  <Text style={s.statValue}>{t("restaurant.parkingAvailable")}</Text>
+                  <Text style={s.statLabel}>{t("restaurant.stat.parking")}</Text>
                 </View>
               </>
             )}
@@ -513,18 +509,18 @@ export default function DetailScreen() {
           {/* ── Mô tả ── */}
           {restaurant.description ? (
             <View style={s.section}>
-              <Text style={s.sectionTitle}>Giới thiệu</Text>
+              <Text style={s.sectionTitle}>{t("restaurant.section.about")}</Text>
               <Text style={s.descText}>{restaurant.description}</Text>
             </View>
           ) : null}
 
           {/* ── Thông tin liên hệ ── */}
           <View style={s.section}>
-            <Text style={s.sectionTitle}>Thông tin</Text>
+            <Text style={s.sectionTitle}>{t("restaurant.section.info")}</Text>
             <View style={s.infoCard}>
               <InfoRow
                 icon="location-sharp"
-                label="Địa chỉ"
+                label={t("restaurant.label.address")}
                 value={
                   restaurant.address || restaurant.location || restaurant.city
                 }
@@ -533,7 +529,7 @@ export default function DetailScreen() {
               <View style={s.divider} />
               <InfoRow
                 icon="time-outline"
-                label="Giờ mở cửa"
+                label={t("restaurant.label.hours")}
                 value={`${restaurant.openTime} – ${restaurant.closeTime}`}
                 valueColor={open ? "#22C55E" : "#EF4444"}
               />
@@ -542,7 +538,7 @@ export default function DetailScreen() {
                   <View style={s.divider} />
                   <InfoRow
                     icon="call-outline"
-                    label="Điện thoại"
+                    label={t("restaurant.label.phone")}
                     value={restaurant.phone}
                     onPress={callPhone}
                   />
@@ -553,7 +549,7 @@ export default function DetailScreen() {
                   <View style={s.divider} />
                   <InfoRow
                     icon="business-outline"
-                    label="Thành phố"
+                    label={t("restaurant.label.city")}
                     value={restaurant.city}
                   />
                 </>
@@ -564,7 +560,7 @@ export default function DetailScreen() {
           {/* ── Ngày mở cửa ── */}
           {restaurant.openDays?.length > 0 && (
             <View style={s.section}>
-              <Text style={s.sectionTitle}>Ngày mở cửa</Text>
+              <Text style={s.sectionTitle}>{t("restaurant.section.openDays")}</Text>
               <View style={s.daysRow}>
                 {["mon", "tue", "wed", "thu", "fri", "sat", "sun"].map((d) => {
                   const active = restaurant.openDays.includes(d);
@@ -579,7 +575,7 @@ export default function DetailScreen() {
                           active ? s.dayTextOpen : s.dayTextClosed,
                         ]}
                       >
-                        {DAY_LABEL[d]}
+                        {dayLabels[d]}
                       </Text>
                     </View>
                   );
@@ -594,7 +590,7 @@ export default function DetailScreen() {
             restaurant.tiktok ||
             restaurant.website) && (
               <View style={s.section}>
-                <Text style={s.sectionTitle}>Mạng xã hội</Text>
+                <Text style={s.sectionTitle}>{t("restaurant.section.social")}</Text>
                 <View style={s.socialRow}>
                   {restaurant.facebook && (
                     <SocialBtn
@@ -666,7 +662,7 @@ export default function DetailScreen() {
             end={{ x: 1, y: 0 }}
           >
             <Ionicons name="navigate-outline" size={20} color="#fff" />
-            <Text style={s.mapBtnText}>Chỉ đường</Text>
+            <Text style={s.mapBtnText}>{t("restaurant.navigate")}</Text>
           </LinearGradient>
         </TouchableOpacity>
 
@@ -691,7 +687,7 @@ export default function DetailScreen() {
             end={{ x: 1, y: 0 }}
           >
             <Ionicons name="calendar-outline" size={20} color="#fff" />
-            <Text style={s.mapBtnText}>Đặt bàn</Text>
+            <Text style={s.mapBtnText}>{t("restaurant.book")}</Text>
           </LinearGradient>
         </TouchableOpacity>
       </View>

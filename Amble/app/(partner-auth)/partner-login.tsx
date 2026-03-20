@@ -21,11 +21,13 @@ import {
   Typography,
 } from "../../constants/theme";
 import { usePartnerAuthStore } from "../../store/partnerAuthStore";
+import { useI18n } from "../../hooks/use-i18n";
 
 const PARTNER_PRIMARY = "#FF6B35";
 const PARTNER_GRAD: [string, string] = ["#FF6B35", "#FFD700"];
 
 export default function PartnerLoginScreen() {
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -35,7 +37,7 @@ export default function PartnerLoginScreen() {
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
-      Alert.alert("Lỗi", "Vui lòng nhập email và mật khẩu");
+      Alert.alert(t("auth.error"), t("login.missingFields"));
       return;
     }
 
@@ -43,7 +45,7 @@ export default function PartnerLoginScreen() {
       await login(email.trim().toLowerCase(), password);
       router.replace("/(partner)/dashboard");
     } catch (error: any) {
-      Alert.alert("Đăng nhập thất bại", error.message);
+      Alert.alert(t("auth.loginFailed"), error.message);
     }
   };
 
@@ -67,20 +69,18 @@ export default function PartnerLoginScreen() {
             <Ionicons name="restaurant" size={36} color="#fff" />
           </View>
 
-          <Text style={styles.appName}>Amble Partner</Text>
-          <Text style={styles.tagline}>Quản lý nhà hàng của bạn</Text>
+          <Text style={styles.appName}>{t("partner.login.title")}</Text>
+          <Text style={styles.tagline}>{t("partner.login.tagline")}</Text>
         </LinearGradient>
 
         {/* Form */}
         <View style={styles.formContainer}>
-          <Text style={styles.welcomeTitle}>Chào mừng trở lại!</Text>
-          <Text style={styles.welcomeSubtitle}>
-            Đăng nhập vào tài khoản đối tác
-          </Text>
+          <Text style={styles.welcomeTitle}>{t("partner.login.welcomeTitle")}</Text>
+          <Text style={styles.welcomeSubtitle}>{t("partner.login.welcomeSubtitle")}</Text>
 
           {/* Email */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email đối tác</Text>
+            <Text style={styles.label}>{t("partner.login.email")}</Text>
 
             <View style={styles.inputWrapper}>
               <Ionicons
@@ -105,7 +105,7 @@ export default function PartnerLoginScreen() {
 
           {/* Password */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Mật khẩu</Text>
+            <Text style={styles.label}>{t("partner.login.password")}</Text>
 
             <View style={styles.inputWrapper}>
               <Ionicons
@@ -117,7 +117,7 @@ export default function PartnerLoginScreen() {
 
               <TextInput
                 style={styles.input}
-                placeholder="Nhập mật khẩu"
+                placeholder={t("partner.login.passwordPlaceholder")}
                 placeholderTextColor={Colors.textMuted}
                 value={password}
                 onChangeText={setPassword}
@@ -154,7 +154,7 @@ export default function PartnerLoginScreen() {
               {isLoading ? (
                 <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.loginBtnText}>Đăng nhập</Text>
+                <Text style={styles.loginBtnText}>{t("auth.login")}</Text>
               )}
             </LinearGradient>
           </TouchableOpacity>
@@ -162,7 +162,7 @@ export default function PartnerLoginScreen() {
           {/* Divider */}
           <View style={styles.divider}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>hoặc</Text>
+            <Text style={styles.dividerText}>{t("welcome.or")}</Text>
             <View style={styles.dividerLine} />
           </View>
 
@@ -170,11 +170,15 @@ export default function PartnerLoginScreen() {
           <View style={styles.demoBox}>
             <View style={styles.demoTitleRow}>
               <Ionicons name="key-outline" size={16} color={PARTNER_PRIMARY} />
-              <Text style={styles.demoTitle}>Tài khoản demo</Text>
+              <Text style={styles.demoTitle}>{t("partner.login.demo")}</Text>
             </View>
 
-            <Text style={styles.demoText}>Email: partner@rooftop.vn</Text>
-            <Text style={styles.demoText}>Mật khẩu: demo123</Text>
+            <Text style={styles.demoText}>
+              {t("partner.login.demoEmail", { email: "partner@rooftop.vn" })}
+            </Text>
+            <Text style={styles.demoText}>
+              {t("partner.login.demoPassword", { password: "demo123" })}
+            </Text>
           </View>
 
           {/* Packages */}
@@ -192,7 +196,7 @@ export default function PartnerLoginScreen() {
                   {pkg.label}
                 </Text>
                 <Text style={[styles.pkgPrice, { color: pkg.color }]}>
-                  {pkg.price}/tháng
+                  {pkg.price}{t("common.perMonth")}
                 </Text>
               </View>
             ))}
@@ -200,11 +204,11 @@ export default function PartnerLoginScreen() {
 
           {/* Register */}
           <View style={styles.registerRow}>
-            <Text style={styles.registerText}>Chưa có tài khoản? </Text>
+            <Text style={styles.registerText}>{t("auth.noAccount")} </Text>
 
             <Link href="/(partner-auth)/partner-register" asChild>
               <TouchableOpacity>
-                <Text style={styles.registerLink}>Đăng ký ngay</Text>
+                <Text style={styles.registerLink}>{t("auth.registerNow")}</Text>
               </TouchableOpacity>
             </Link>
           </View>
@@ -220,9 +224,7 @@ export default function PartnerLoginScreen() {
                 size={16}
                 color={Colors.textMuted}
               />
-              <Text style={styles.backText}>
-                Quay lại đăng nhập khách hàng
-              </Text>
+              <Text style={styles.backText}>{t("partner.login.backToCustomer")}</Text>
             </View>
           </TouchableOpacity>
         </View>

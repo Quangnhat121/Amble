@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { usePartnerAuthStore } from '../../store/partnerAuthStore';
 import { PartnerBottomNav } from '../../components/partner/PartnerBottomNav';
+import { useI18n } from '../../hooks/use-i18n';
 
 const { width } = Dimensions.get('window');
 
@@ -61,6 +62,7 @@ const PACKAGE_CONFIG = {
 export default function PartnerDashboard() {
   const router = useRouter();
   const { partner, restaurant, logout } = usePartnerAuthStore();
+  const { t, locale } = useI18n();
 
   const [bookings, setBookings] = useState(MOCK_BOOKINGS);
 
@@ -109,10 +111,10 @@ export default function PartnerDashboard() {
   };
 
   const handleReject = (id: string) => {
-    Alert.alert('Từ chối đơn', 'Bạn có chắc muốn từ chối đơn này?', [
-      { text: 'Hủy', style: 'cancel' },
+    Alert.alert(t('partner.dashboard.rejectTitle'), t('partner.dashboard.rejectMessage'), [
+      { text: t('partner.dashboard.rejectCancel'), style: 'cancel' },
       {
-        text: 'Từ chối', style: 'destructive',
+        text: t('partner.dashboard.rejectConfirm'), style: 'destructive',
         onPress: () => setBookings((prev) =>
           prev.map((b) => b.id === id ? { ...b, status: 'cancelled' } : b)
         ),
@@ -133,7 +135,7 @@ export default function PartnerDashboard() {
         {/* ── Header ─────────────────────────────────────────── */}
         <Animated.View style={[styles.header, slideUp(headerAnim)]}>
           <View>
-            <Text style={styles.headerSub}>Chào mừng trở lại,</Text>
+            <Text style={styles.headerSub}>{t('partner.dashboard.greeting')}</Text>
             <Text style={styles.headerName}>{partner?.ownerName || 'Partner'} 👋</Text>
           </View>
           <View style={styles.headerActions}>
@@ -162,7 +164,7 @@ export default function PartnerDashboard() {
         {/* ── Restaurant name + package badge ──────────────── */}
         <Animated.View style={[styles.restaurantRow, slideUp(headerAnim)]}>
           <Text style={styles.restaurantName} numberOfLines={1}>
-            🍽️  {partner?.restaurantName || restaurant?.name || 'Nhà hàng'}
+            🍽️  {partner?.restaurantName || restaurant?.name || t('history.restaurantFallback')}
           </Text>
           <View style={[styles.pkgBadge, { backgroundColor: pkg.bg }]}>
             <Text style={[styles.pkgBadgeText, { color: pkg.color }]}>{pkg.label}</Text>
@@ -172,22 +174,22 @@ export default function PartnerDashboard() {
         {/* ── Stats grid ─────────────────────────────────────── */}
         <Animated.View style={[styles.statsGrid, slideUp(statsAnim)]}>
           <StatCard
-            emoji="🪑" label="Bàn trống"
+            emoji="🪑" label={t("partner.dashboard.stat.available")}
             value={MOCK_STATS.availableTables} total={MOCK_STATS.totalTables}
             color="#22C55E" bg="#F0FDF4"
           />
           <StatCard
-            emoji="🔴" label="Đã đặt"
+            emoji="🔴" label={t("partner.dashboard.stat.booked")}
             value={MOCK_STATS.bookedTables} total={MOCK_STATS.totalTables}
             color="#EF4444" bg="#FEF2F2"
           />
           <StatCard
-            emoji="📅" label="Hôm nay"
+            emoji="📅" label={t("partner.dashboard.stat.today")}
             value={todayBookings.length}
             color="#3B82F6" bg="#EFF6FF"
           />
           <StatCard
-            emoji="⏳" label="Chờ xác nhận"
+            emoji="⏳" label={t("partner.dashboard.stat.pending")}
             value={pendingBookings.length}
             color="#F59E0B" bg="#FFFBEB"
             alert={pendingBookings.length > 0}
@@ -204,13 +206,13 @@ export default function PartnerDashboard() {
           >
             <View style={styles.revenueHeader}>
               <View>
-                <Text style={styles.revenueLabel}>📈  Doanh thu tháng này</Text>
+                <Text style={styles.revenueLabel}>{t('partner.dashboard.revenue')}</Text>
                 <Text style={styles.revenueAmount}>
-                  {MOCK_STATS.revenue.toLocaleString('vi-VN')}đ
+                  {MOCK_STATS.revenue.toLocaleString(locale)}đ
                 </Text>
                 <View style={styles.revenueGrowthRow}>
                   <Text style={styles.revenueGrowthUp}>↑ {MOCK_STATS.revenueGrowth}%</Text>
-                  <Text style={styles.revenueGrowthLabel}>so với tháng trước</Text>
+                  <Text style={styles.revenueGrowthLabel}>{t('partner.dashboard.revenueCompare')}</Text>
                 </View>
               </View>
             </View>
@@ -246,9 +248,9 @@ export default function PartnerDashboard() {
         {pendingBookings.length > 0 && (
           <Animated.View style={slideUp(ordersAnim)}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>⚡ Đơn chờ xác nhận</Text>
+              <Text style={styles.sectionTitle}>{t('partner.dashboard.section.pending')}</Text>
               <TouchableOpacity onPress={() => router.push('./(partner)/orders')}>
-                <Text style={styles.sectionLink}>Xem tất cả →</Text>
+                <Text style={styles.sectionLink}>{t('partner.dashboard.section.viewAll')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -262,13 +264,13 @@ export default function PartnerDashboard() {
                   <View style={styles.pendingRight}>
                     <Text style={styles.pendingTable}>{booking.tableNumber}</Text>
                     <Text style={styles.pendingTime}>{booking.date} • {booking.time}</Text>
-                    <Text style={styles.pendingGuests}>{booking.guests} khách</Text>
+                    <Text style={styles.pendingGuests}>{booking.guests} {t('partner.dashboard.pendingGuests')}</Text>
                   </View>
                 </View>
 
                 <View style={styles.pendingDeposit}>
                   <Text style={styles.pendingDepositText}>
-                    💰 Đặt cọc: {booking.depositAmount.toLocaleString('vi-VN')}đ
+                    {t('partner.dashboard.deposit', { amount: booking.depositAmount.toLocaleString(locale) })}
                   </Text>
                 </View>
 
@@ -277,7 +279,7 @@ export default function PartnerDashboard() {
                     style={styles.rejectBtn}
                     onPress={() => handleReject(booking.id)}
                   >
-                    <Text style={styles.rejectBtnText}>✕ Từ chối</Text>
+                    <Text style={styles.rejectBtnText}>{t('partner.dashboard.reject')}</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.confirmBtn}
@@ -288,7 +290,7 @@ export default function PartnerDashboard() {
                       style={styles.confirmBtnGrad}
                       start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
                     >
-                      <Text style={styles.confirmBtnText}>✓ Xác nhận</Text>
+                      <Text style={styles.confirmBtnText}>{t('partner.dashboard.confirm')}</Text>
                     </LinearGradient>
                   </TouchableOpacity>
                 </View>
@@ -299,13 +301,13 @@ export default function PartnerDashboard() {
 
         {/* ── Quick actions ──────────────────────────────────── */}
         <Animated.View style={slideUp(actionsAnim)}>
-          <Text style={styles.sectionTitle}>Truy cập nhanh</Text>
+          <Text style={styles.sectionTitle}>{t('partner.dashboard.section.quick')}</Text>
           <View style={styles.quickGrid}>
             {[
-              { emoji: '🪑', label: 'Quản lý bàn',    path: '/(partner)/tables' },
-              { emoji: '📋', label: 'Đơn đặt bàn',    path: '/(partner)/orders' },
-              { emoji: '🏪', label: 'Hồ sơ nhà hàng', path: '/(partner)/profile' },
-              { emoji: '🎫', label: 'Voucher',         path: '/(partner)/vouchers' },
+              { emoji: '🪑', label: t('partner.dashboard.quick.tables'),    path: '/(partner)/tables' },
+              { emoji: '📋', label: t('partner.dashboard.quick.orders'),    path: '/(partner)/orders' },
+              { emoji: '🏪', label: t('partner.dashboard.quick.profile'), path: '/(partner)/profile' },
+              { emoji: '🎫', label: t('partner.dashboard.quick.voucher'),         path: '/(partner)/vouchers' },
             ].map((item) => (
               <TouchableOpacity
                 key={item.label}
@@ -328,7 +330,7 @@ export default function PartnerDashboard() {
             router.replace('/welcome');
           }}
         >
-          <Text style={styles.logoutText}>Đăng xuất</Text>
+          <Text style={styles.logoutText}>{t('partner.dashboard.logout')}</Text>
         </TouchableOpacity>
 
       </ScrollView>
