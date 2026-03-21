@@ -3,18 +3,20 @@ import { Stack, useRouter, usePathname } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { useAuthStore } from "../store/authStore";
 import { usePartnerAuthStore } from "../store/partnerAuthStore";
+import { useLanguageStore } from "../store/languageStore";
 
 export default function RootLayout() {
   const { isAuthenticated, loadUser } = useAuthStore();
   const { isAuthenticated: isPartnerAuthenticated, loadPartner } =
     usePartnerAuthStore();
+  const { language, loadLanguage } = useLanguageStore();
   const pathname = usePathname();
   const router = useRouter();
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     const init = async () => {
-      await Promise.all([loadUser(), loadPartner()]);
+      await Promise.all([loadUser(), loadPartner(), loadLanguage()]);
       setIsReady(true);
     };
     init();
@@ -24,26 +26,28 @@ export default function RootLayout() {
     if (!isReady) return;
 
     const inAuthGroup =
-      pathname.startsWith("/login") || pathname.startsWith("/register");
+      pathname.startsWith("/login") ||
+      pathname.startsWith("/register") ||
+      pathname.startsWith("/(auth)");
     const inPartnerAuthGroup =
       pathname.startsWith("/partner-login") ||
-      pathname.startsWith("/partner-register");
+      pathname.startsWith("/partner-register") ||
+      pathname.startsWith("/(partner-auth)");
     const inPartnerGroup =
-      pathname.startsWith("/dashboard") ||
-      pathname.startsWith("/tables") ||
-      pathname.startsWith("/orders") ||
-      pathname.startsWith("/notifications") ||
-      pathname.startsWith("/profile");
-    const inTabsGroup =
-      pathname.startsWith("/(tabs)") ||
-      pathname === "/" ||
-      pathname.startsWith("/explore");
+      pathname.includes("/dashboard") ||
+      pathname.includes("/tables") ||
+      pathname.includes("/orders") ||
+      pathname.includes("/notifications") ||
+      pathname.includes("/profile") ||
+      pathname.startsWith("/(partner)");
+    const inTabsGroup = pathname.startsWith("/(tabs)") || pathname === "/";
     const onWelcome = pathname === "/welcome";
+    const onLanguage = pathname === "/language";
+    const onIntro = pathname === "/intro";
 
     // ── Không redirect khi đang ở các màn hình con ──────────
-    if (onWelcome) return;
-    if (pathname.startsWith("/restaurant/")) return;  // detail nhà hàng
-    if (pathname.startsWith("/booking/")) return;     // flow đặt bàn
+    if (pathname.startsWith("/restaurant/")) return; // detail nhà hàng
+    if (pathname.startsWith("/booking/")) return; // flow đặt bàn
 
     if (isPartnerAuthenticated) {
       if (!inPartnerGroup) router.replace("/dashboard");
@@ -58,10 +62,19 @@ export default function RootLayout() {
       return;
     }
 
-    if (!inAuthGroup && !inPartnerAuthGroup) {
-      router.replace("/welcome");
+    if (!language) {
+      if (!onLanguage) router.replace("/language");
+      return;
     }
-  }, [isReady, isAuthenticated, isPartnerAuthenticated, pathname]);
+
+    if (onLanguage || onIntro || onWelcome) {
+      return;
+    }
+
+    if (!inAuthGroup && !inPartnerAuthGroup) {
+      router.replace("/intro");
+    }
+  }, [isReady, isAuthenticated, isPartnerAuthenticated, pathname, language]);
 
   return (
     <>

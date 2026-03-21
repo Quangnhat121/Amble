@@ -1,183 +1,149 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useMemo } from "react";
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
-  Animated,
   Dimensions,
   StatusBar,
-  Image,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { Colors, Spacing, BorderRadius, Typography } from '../constants/theme';
-import { Ionicons } from '@expo/vector-icons';
-const { width, height } = Dimensions.get('window');
+} from "react-native";
+import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { Ionicons } from "@expo/vector-icons";
+import AmbleLogo from "../components/AmbleLogo";
+import { useLanguageStore } from "../store/languageStore";
+
+const { width, height } = Dimensions.get("window");
+
+const COPY = {
+  vi: {
+    changeLanguage: "Đổi ngôn ngữ",
+    headline: "Không chỉ ăn uống.\nTrải nghiệm của bạn.",
+    tagline: "Ứng dụng đặt bàn hàng đầu Việt Nam",
+    rolePrompt: "Bạn muốn đăng nhập với tư cách gì?",
+    customerTitle: "Khách Hàng",
+    customerSubtitle: "Tìm kiếm & đặt bàn nhà hàng",
+    partnerTitle: "Đối Tác Nhà Hàng",
+    partnerSubtitle: "Quản lý nhà hàng & đặt bàn",
+    or: "hoặc",
+    register: "Đăng Ký miễn phí",
+  },
+  en: {
+    changeLanguage: "Change language",
+    headline: "More than dining.\nYour full experience.",
+    tagline: "Vietnam's #1 dining app",
+    rolePrompt: "How would you like to sign in?",
+    customerTitle: "Customer",
+    customerSubtitle: "Find and reserve restaurants",
+    partnerTitle: "Restaurant Partner",
+    partnerSubtitle: "Manage your venue & bookings",
+    or: "or",
+    register: "Sign up for free",
+  },
+} as const;
 
 export default function WelcomeScreen() {
   const router = useRouter();
-
-  // Fade + slide animations
-  const logoAnim = useRef(new Animated.Value(0)).current;
-  const headlineAnim = useRef(new Animated.Value(0)).current;
-  const taglineAnim = useRef(new Animated.Value(0)).current;
-  const card1Anim = useRef(new Animated.Value(0)).current;
-  const card2Anim = useRef(new Animated.Value(0)).current;
-  const dividerAnim = useRef(new Animated.Value(0)).current;
-  const registerAnim = useRef(new Animated.Value(0)).current;
-
-  // Blob float animations
-  const blob1Y = useRef(new Animated.Value(0)).current;
-  const blob2Y = useRef(new Animated.Value(0)).current;
-
-  useEffect(() => {
-    // Staggered entrance
-    Animated.stagger(80, [
-      Animated.spring(logoAnim, { toValue: 1, useNativeDriver: true, tension: 60, friction: 8 }),
-      Animated.spring(headlineAnim, { toValue: 1, useNativeDriver: true, tension: 55, friction: 9 }),
-      Animated.spring(taglineAnim, { toValue: 1, useNativeDriver: true, tension: 55, friction: 9 }),
-      Animated.spring(card1Anim, { toValue: 1, useNativeDriver: true, tension: 50, friction: 10 }),
-      Animated.spring(card2Anim, { toValue: 1, useNativeDriver: true, tension: 50, friction: 10 }),
-      Animated.spring(dividerAnim, { toValue: 1, useNativeDriver: true, tension: 50, friction: 10 }),
-      Animated.spring(registerAnim, { toValue: 1, useNativeDriver: true, tension: 50, friction: 10 }),
-    ]).start();
-
-    // Floating blobs
-    const floatBlob = (anim: Animated.Value, duration: number) =>
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(anim, { toValue: -14, duration, useNativeDriver: true, easing: (t) => Math.sin(t * Math.PI) }),
-          Animated.timing(anim, { toValue: 0, duration, useNativeDriver: true }),
-        ])
-      ).start();
-
-    floatBlob(blob1Y, 3200);
-    floatBlob(blob2Y, 4100);
-  }, []);
-
-  const makeSlideUp = (anim: Animated.Value) => ({
-    opacity: anim,
-    transform: [{ translateY: anim.interpolate({ inputRange: [0, 1], outputRange: [28, 0] }) }],
-  });
+  const { language } = useLanguageStore();
+  const copyLanguage = language === "en" ? "en" : "vi";
+  const copy = useMemo(() => COPY[copyLanguage], [copyLanguage]);
 
   return (
     <View style={styles.root}>
       <StatusBar barStyle="light-content" />
 
-      {/* ── Background gradient ─────────────────────── */}
       <LinearGradient
-        colors={['#FF8C42', '#FFB347', '#FFD166']}
+        colors={["#ff8b25", "#ffd109", "#ffd8a4"]}
         style={StyleSheet.absoluteFillObject}
         start={{ x: 0.2, y: 0 }}
         end={{ x: 0.8, y: 1 }}
       />
 
-      {/* Decorative blobs */}
-      <Animated.View
-        style={[
-          styles.blob1,
-          { transform: [{ translateY: blob1Y }] },
-        ]}
-      />
-      <Animated.View
-        style={[
-          styles.blob2,
-          { transform: [{ translateY: blob2Y }] },
-        ]}
-      />
+      <View style={styles.blob1} />
+      <View style={styles.blob2} />
 
-      {/* ── Top hero section ───────────────────────── */}
       <View style={styles.hero}>
-        {/* Logo row */}
-        <Animated.View style={[styles.logoRow, makeSlideUp(logoAnim)]}>
-          <View style={styles.logoMark}>
-            <Text style={styles.logoMarkText}>A</Text>
-          </View>
-          <Text style={styles.logoText}>Amble</Text>
-        </Animated.View>
+        <View style={styles.logoRow}>
+          <AmbleLogo size="lg" textColor="#FFFFFF" />
+        </View>
 
-        {/* Headline */}
-        <Animated.Text style={[styles.headline, makeSlideUp(headlineAnim)]}>
-          Không chỉ ăn uống.{'\n'}Trải nghiệm của bạn.
-        </Animated.Text>
-
-        {/* Tagline */}
-        <Animated.Text style={[styles.tagline, makeSlideUp(taglineAnim)]}>
-          🇻🇳 Vietnam's #1 dining app
-        </Animated.Text>
+        <Text style={styles.headline}>{copy.headline}</Text>
+        <Text style={styles.tagline}>{copy.tagline}</Text>
       </View>
 
-      {/* ── Bottom card sheet ──────────────────────── */}
       <View style={styles.sheet}>
-        <Text style={styles.sheetPrompt}>Bạn muốn đăng nhập với tư cách gì?</Text>
+        <Text style={styles.sheetPrompt}>{copy.rolePrompt}</Text>
 
-        {/* Customer card */}
-        <Animated.View style={makeSlideUp(card1Anim)}>
-          <TouchableOpacity
-            style={styles.cardCustomer}
-            onPress={() => router.push('/(auth)/login')}
-            activeOpacity={0.85}
-          >
-            <View style={styles.cardIconWrap}>
-              <LinearGradient
-                colors={['#FF8C42', '#FFD166']}
-                style={styles.cardIconGrad}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-              >
-                <Ionicons name="person" size={20} color="#FF6B35" />
-              </LinearGradient>
+        <TouchableOpacity
+          style={styles.cardCustomer}
+          onPress={() => router.push("/(auth)/login")}
+          activeOpacity={0.85}
+        >
+          <View style={styles.cardIconWrap}>
+            <LinearGradient
+              colors={["#ff8b25", "#ffd109"]}
+              style={styles.cardIconGrad}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+            >
+              <Ionicons name="person" size={20} color="#ffffff" />
+            </LinearGradient>
+          </View>
+
+          <View style={styles.cardText}>
+            <Text style={styles.cardTitle}>{copy.customerTitle}</Text>
+            <Text style={styles.cardSubtitle}>{copy.customerSubtitle}</Text>
+          </View>
+
+          <Text style={styles.cardArrow}>›</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.cardPartner}
+          onPress={() => router.push("../(partner-auth)/partner-login")}
+          activeOpacity={0.85}
+        >
+          <View style={styles.cardIconWrap}>
+            <View style={styles.cardIconDark}>
+              <Ionicons name="restaurant" size={20} color="#FF6B35" />
             </View>
+          </View>
 
-            <View style={styles.cardText}>
-              <Text style={styles.cardTitle}>Khách Hàng</Text>
-              <Text style={styles.cardSubtitle}>Tìm kiếm & đặt bàn nhà hàng</Text>
-            </View>
+          <View style={styles.cardText}>
+            <Text style={[styles.cardTitle, { color: "#1A1A1A" }]}>
+              {copy.partnerTitle}
+            </Text>
+            <Text style={styles.cardSubtitle}>{copy.partnerSubtitle}</Text>
+          </View>
 
-            <Text style={styles.cardArrow}>›</Text>
-          </TouchableOpacity>
-        </Animated.View>
+          <Text style={[styles.cardArrow, { color: "#999" }]}>›</Text>
+        </TouchableOpacity>
 
-        {/* Partner card */}
-        <Animated.View style={makeSlideUp(card2Anim)}>
-          <TouchableOpacity
-            style={styles.cardPartner}
-            onPress={() => router.push('../(partner-auth)/partner-login')}
-            activeOpacity={0.85}
-          >
-            <View style={styles.cardIconWrap}>
-              <View style={styles.cardIconDark}>
-                <Ionicons name="restaurant" size={20} color="#FF6B35" />
-              </View>
-            </View>
-
-            <View style={styles.cardText}>
-              <Text style={[styles.cardTitle, { color: '#1A1A1A' }]}>Đối Tác Nhà Hàng</Text>
-              <Text style={styles.cardSubtitle}>Quản lý nhà hàng & đặt bàn</Text>
-            </View>
-
-            <Text style={[styles.cardArrow, { color: '#999' }]}>›</Text>
-          </TouchableOpacity>
-        </Animated.View>
-
-        {/* Divider */}
-        <Animated.View style={[styles.dividerRow, makeSlideUp(dividerAnim)]}>
+        <View style={styles.dividerRow}>
           <View style={styles.dividerLine} />
-          <Text style={styles.dividerText}>hoặc</Text>
+          <Text style={styles.dividerText}>{copy.or}</Text>
           <View style={styles.dividerLine} />
-        </Animated.View>
+        </View>
 
-        {/* Free register button */}
-        <Animated.View style={makeSlideUp(registerAnim)}>
-          <TouchableOpacity
-            style={styles.registerBtn}
-            onPress={() => router.push('/(auth)/register')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.registerBtnText}>Đăng Ký miễn phí</Text>
-          </TouchableOpacity>
-        </Animated.View>
+        <TouchableOpacity
+          style={styles.registerBtn}
+          onPress={() => router.push("/(auth)/register")}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.registerBtnText}>{copy.register}</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.changeLanguageBtn}
+          onPress={() => router.push("/language")}
+          activeOpacity={0.85}
+        >
+          <View style={styles.changeLanguageLeft}>
+            <Ionicons name="language-outline" size={17} color="#6B7280" />
+            <Text style={styles.changeLanguageText}>{copy.changeLanguage}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={16} color="#9CA3AF" />
+        </TouchableOpacity>
       </View>
     </View>
   );
@@ -186,88 +152,83 @@ export default function WelcomeScreen() {
 const styles = StyleSheet.create({
   root: {
     flex: 1,
-    backgroundColor: '#FF8C42',
+    backgroundColor: "#ff8b25",
   },
 
-  // Decorative blobs
   blob1: {
-    position: 'absolute',
+    position: "absolute",
     width: width * 0.7,
     height: width * 0.7,
     borderRadius: width * 0.35,
-    backgroundColor: 'rgba(255, 255, 255, 0.08)',
+    backgroundColor: "rgba(255, 255, 255, 0.08)",
     top: -width * 0.2,
     right: -width * 0.2,
   },
   blob2: {
-    position: 'absolute',
+    position: "absolute",
     width: width * 0.5,
     height: width * 0.5,
     borderRadius: width * 0.25,
-    backgroundColor: 'rgba(255, 255, 255, 0.06)',
+    backgroundColor: "rgba(255, 255, 255, 0.06)",
     top: height * 0.15,
     left: -width * 0.15,
   },
 
-  // Hero
   hero: {
     flex: 1,
     paddingTop: 64,
     paddingHorizontal: 28,
     paddingBottom: 32,
-    justifyContent: 'flex-start',
+    justifyContent: "flex-start",
   },
 
   logoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 32,
+    marginBottom: 34,
   },
-  logoMark: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 10,
+  changeLanguageBtn: {
+    marginTop: 12,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderWidth: 1,
+    borderColor: "#E8E8E8",
+    borderRadius: 14,
+    backgroundColor: "#FFFFFF",
+    paddingHorizontal: 14,
+    minHeight: 48,
   },
-  logoMarkText: {
-    fontSize: 18,
-    fontWeight: '900',
-    color: '#fff',
+  changeLanguageLeft: {
+    flexDirection: "row",
+    alignItems: "center",
   },
-  logoText: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#fff',
-    letterSpacing: 0.5,
+  changeLanguageText: {
+    color: "#374151",
+    fontSize: 14,
+    fontWeight: "600",
+    marginLeft: 8,
   },
-
   headline: {
     fontSize: 36,
-    fontWeight: '900',
-    color: '#fff',
+    fontWeight: "900",
+    color: "#fff",
     lineHeight: 44,
     marginBottom: 12,
     letterSpacing: -0.5,
   },
   tagline: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.85)',
+    fontSize: 20,
+    color: "rgba(255,255,255,0.85)",
     letterSpacing: 0.3,
   },
 
-  // Bottom sheet
   sheet: {
-    backgroundColor: '#fff',
+    backgroundColor: "#fff",
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
     paddingHorizontal: 24,
     paddingTop: 28,
     paddingBottom: 40,
-    // subtle shadow
-    shadowColor: '#000',
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: -4 },
     shadowOpacity: 0.08,
     shadowRadius: 16,
@@ -275,31 +236,30 @@ const styles = StyleSheet.create({
   },
   sheetPrompt: {
     fontSize: 14,
-    color: '#888',
-    textAlign: 'center',
+    color: "#888",
+    textAlign: "center",
     marginBottom: 20,
   },
 
-  // Cards
   cardCustomer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1.5,
-    borderColor: '#FF8C42',
+    borderColor: "#ff8b25",
     borderRadius: 18,
     padding: 16,
     marginBottom: 12,
-    backgroundColor: '#FFF8F4',
+    backgroundColor: "#FFF8F4",
   },
   cardPartner: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1.5,
-    borderColor: '#1A1A1A',
+    borderColor: "#1A1A1A",
     borderRadius: 18,
     padding: 16,
     marginBottom: 12,
-    backgroundColor: '#F7F7F7',
+    backgroundColor: "#F7F7F7",
   },
 
   cardIconWrap: {
@@ -309,19 +269,16 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
   },
   cardIconDark: {
     width: 48,
     height: 48,
     borderRadius: 14,
-    backgroundColor: '#1A1A1A',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardIconEmoji: {
-    fontSize: 24,
+    backgroundColor: "#1A1A1A",
+    alignItems: "center",
+    justifyContent: "center",
   },
 
   cardText: {
@@ -329,49 +286,47 @@ const styles = StyleSheet.create({
   },
   cardTitle: {
     fontSize: 16,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    fontWeight: "700",
+    color: "#1A1A1A",
     marginBottom: 2,
   },
   cardSubtitle: {
     fontSize: 12,
-    color: '#888',
+    color: "#888",
   },
   cardArrow: {
     fontSize: 22,
-    color: '#FF8C42',
-    fontWeight: '300',
+    color: "#ff8b25",
+    fontWeight: "300",
   },
 
-  // Divider
   dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginVertical: 16,
   },
   dividerLine: {
     flex: 1,
     height: 1,
-    backgroundColor: '#EBEBEB',
+    backgroundColor: "#EBEBEB",
   },
   dividerText: {
     fontSize: 12,
-    color: '#AAA',
+    color: "#AAA",
     marginHorizontal: 12,
   },
 
-  // Register button
   registerBtn: {
     borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderColor: "#E0E0E0",
     borderRadius: 18,
     paddingVertical: 16,
-    alignItems: 'center',
-    backgroundColor: '#FAFAFA',
+    alignItems: "center",
+    backgroundColor: "#FAFAFA",
   },
   registerBtnText: {
     fontSize: 15,
-    fontWeight: '700',
-    color: '#1A1A1A',
+    fontWeight: "700",
+    color: "#1A1A1A",
   },
 });

@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
 const bookingSchema = new mongoose.Schema(
   {
@@ -9,25 +9,25 @@ const bookingSchema = new mongoose.Schema(
     },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'User',
+      ref: "User",
       required: true,
     },
     restaurantId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Restaurant',
+      ref: "Restaurant",
       required: true,
     },
     tableId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: 'Table',
+      ref: "Table",
       required: true,
     },
     bookingDetails: {
       date: { type: String, required: true },
       time: { type: String, required: true },
       partySize: { type: Number, required: true },
-      purpose: { type: String, default: 'casual' },
-      specialRequests: { type: String, default: '' },
+      purpose: { type: String, default: "casual" },
+      specialRequests: { type: String, default: "" },
     },
     pricing: {
       depositAmount: { type: Number, required: true },
@@ -40,14 +40,14 @@ const bookingSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['draft', 'confirmed', 'paid', 'completed', 'cancelled'],
-      default: 'draft',
+      enum: ["draft", "pending", "confirmed", "paid", "completed", "cancelled"],
+      default: "draft",
     },
     payment: {
       transactionId: String,
       method: {
         type: String,
-        enum: ['momo', 'bank', 'credit', 'apple'],
+        enum: ["momo", "bank", "credit", "apple"],
       },
       paidAt: Date,
     },
@@ -56,18 +56,18 @@ const bookingSchema = new mongoose.Schema(
     cancelledAt: Date,
     cancellationReason: String,
   },
-  { timestamps: true }
+  { timestamps: true },
 );
 
 // Generate booking number
-bookingSchema.pre('save', async function (next) {
+bookingSchema.pre("save", async function (next) {
   if (!this.bookingNumber) {
     const date = new Date();
-    const dateStr = date.toISOString().slice(0, 10).replace(/-/g, '');
+    const dateStr = date.toISOString().slice(0, 10).replace(/-/g, "");
     const random = Math.floor(1000 + Math.random() * 9000);
     this.bookingNumber = `BK-${dateStr}-${random}`;
   }
   next();
 });
 
-module.exports = mongoose.model('Booking', bookingSchema);
+module.exports = mongoose.model("Booking", bookingSchema);

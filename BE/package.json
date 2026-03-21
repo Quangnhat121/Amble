@@ -6,7 +6,8 @@
   "scripts": {
     "start": "nodemon ./bin/www",
     "seed": "node seed.js",
-    "dev": "nodemon server.js"
+    "dev": "nodemon server.js",
+    "set:reward:6000": "node scripts/set-reward-6000.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

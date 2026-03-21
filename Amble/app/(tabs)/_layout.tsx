@@ -1,7 +1,6 @@
 import { Tabs } from "expo-router";
 import { View, Text, StyleSheet } from "react-native";
 import { Colors } from "../../constants/theme";
-import { IconSymbol } from "@/components/ui/icon-symbol";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
 function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
@@ -23,12 +22,12 @@ export default function TabsLayout() {
           borderTopColor: "#E8E8F0",
           paddingBottom: 8,
           paddingTop: 8,
-          height: 65,
+          height: 72,
         },
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textMuted,
         tabBarLabelStyle: {
-          fontSize: 11,
+          fontSize: 12,
           fontWeight: "600",
           marginTop: 2,
         },
@@ -39,7 +38,7 @@ export default function TabsLayout() {
         options={{
           title: "Trang chủ",
           tabBarIcon: ({ color }) => (
-            <IconSymbol size={28} name="house.fill" color={color} />
+            <Ionicons size={28} name="home-outline" color={color} />
           ),
         }}
       />
@@ -53,18 +52,26 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
-      name="chat"
-      options={{
-        title: "AmbleAI",
-        tabBarIcon: ({ color }) => (
-          <Ionicons size={28} name="chatbubble-ellipses-outline" color={color} />
-        ),
-      }}
-    />
-    <Tabs.Screen
+        name="chat"
+        options={{
+          title: "AI",
+          tabBarIcon: () => (
+            <View style={styles.aiTabWrap}>
+              <View style={styles.aiTabBtn}>
+                <Ionicons
+                  size={23}
+                  name="chatbubble-ellipses-outline"
+                  color="#fff"
+                />
+              </View>
+            </View>
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="history"
         options={{
-          title: "Lịch sử đặt bàn",
+          title: "Đặt bàn",
           tabBarIcon: ({ color }) => (
             <Ionicons size={28} name="calendar-outline" color={color} />
           ),
@@ -79,9 +86,13 @@ export default function TabsLayout() {
           ),
         }}
       />
+      <Tabs.Screen
+        name="rewards"
+        options={{
+          href: null,
+        }}
+      />
     </Tabs>
-
-    
   );
 }
 
@@ -98,5 +109,25 @@ const styles = StyleSheet.create({
   },
   iconText: {
     fontSize: 18,
+  },
+  aiTabWrap: {
+    marginTop: -30,
+    width: 64,
+    alignItems: "center",
+  },
+  aiTabBtn: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "#FFB100",
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 4,
+    borderColor: "#FFF3D6",
+    shadowColor: "#F59E0B",
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.28,
+    shadowRadius: 10,
+    elevation: 8,
   },
 });

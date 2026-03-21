@@ -21,6 +21,7 @@ import {
 } from "../../constants/theme";
 import { useAuthStore } from "../../store/authStore";
 import { Ionicons } from "@expo/vector-icons";
+import AmbleLogo from "../../components/AmbleLogo";
 // ─── Design tokens ───
 const PRIMARY = "#FF6B35";
 const GRAD: [string, string] = ["#FF6B35", "#FFD700"];
@@ -112,9 +113,11 @@ export default function RegisterScreen() {
             <Ionicons name="arrow-back" size={22} color="#fff" />
           </TouchableOpacity>
 
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoIcon}>A</Text>
-          </View>
+          <AmbleLogo
+            size="md"
+            showText={false}
+            containerStyle={styles.registerLogo}
+          />
           <Text style={styles.headerTitle}>Tạo tài khoản</Text>
           <Text style={styles.headerSubtitle}>
             Bắt đầu hành trình đi bộ của bạn ngay hôm nay
@@ -369,22 +372,8 @@ const styles = StyleSheet.create({
     marginBottom: 18,
   },
   backIcon: { fontSize: 20, color: "#fff", fontWeight: "600" },
-  logoContainer: {
-    width: 72,
-    height: 72,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    borderRadius: 22,
-    alignItems: "center",
-    justifyContent: "center",
+  registerLogo: {
     marginBottom: 14,
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.35)",
-  },
-  logoIcon: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#fff",
-    letterSpacing: 1,
   },
   headerTitle: {
     fontSize: 30,

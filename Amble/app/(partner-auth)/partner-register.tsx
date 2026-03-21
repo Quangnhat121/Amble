@@ -14,7 +14,12 @@ import {
 import { Link, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { Ionicons } from "@expo/vector-icons";
-import { Colors, Spacing, BorderRadius, Typography } from "../../constants/theme";
+import {
+  Colors,
+  Spacing,
+  BorderRadius,
+  Typography,
+} from "../../constants/theme";
 import { usePartnerAuthStore } from "../../store/partnerAuthStore";
 
 const PARTNER_GRAD: [string, string] = ["#FF6B35", "#FFD700"];
@@ -45,8 +50,48 @@ export default function PartnerRegisterScreen() {
     setForm((prev) => ({ ...prev, [key]: value }));
 
   const handleNext = () => {
-    if (step === "account") setStep("restaurant");
-    else if (step === "restaurant") setStep("package");
+    if (step === "account") {
+      if (
+        !form.ownerName.trim() ||
+        !form.email.trim() ||
+        !form.phone.trim() ||
+        !form.password
+      ) {
+        Alert.alert(
+          "Thiếu thông tin",
+          "Vui lòng nhập đầy đủ thông tin tài khoản.",
+        );
+        return;
+      }
+      if (!/^\S+@\S+\.\S+$/.test(form.email.trim())) {
+        Alert.alert(
+          "Email không hợp lệ",
+          "Vui lòng nhập email đúng định dạng.",
+        );
+        return;
+      }
+      if (form.password.length < 6) {
+        Alert.alert("Mật khẩu yếu", "Mật khẩu cần ít nhất 6 ký tự.");
+        return;
+      }
+      if (form.password !== form.confirmPassword) {
+        Alert.alert("Mật khẩu không khớp", "Xác nhận mật khẩu chưa chính xác.");
+        return;
+      }
+      setStep("restaurant");
+      return;
+    }
+
+    if (step === "restaurant") {
+      if (!form.restaurantName.trim() || !form.restaurantCity.trim()) {
+        Alert.alert(
+          "Thiếu thông tin",
+          "Vui lòng nhập tên nhà hàng và thành phố.",
+        );
+        return;
+      }
+      setStep("package");
+    }
   };
 
   const handleBack = () => {
@@ -56,6 +101,18 @@ export default function PartnerRegisterScreen() {
   };
 
   const handleRegister = async () => {
+    if (!form.ownerName.trim() || !form.email.trim() || !form.phone.trim()) {
+      Alert.alert(
+        "Thiếu thông tin",
+        "Vui lòng nhập đầy đủ thông tin bắt buộc.",
+      );
+      return;
+    }
+    if (!form.restaurantName.trim()) {
+      Alert.alert("Thiếu thông tin", "Vui lòng nhập tên nhà hàng.");
+      return;
+    }
+
     try {
       await register({
         ownerName: form.ownerName,
@@ -68,7 +125,7 @@ export default function PartnerRegisterScreen() {
         cuisine: form.cuisine,
         subscriptionPackage: form.subscriptionPackage,
       });
-      router.replace("/(partner)/dashboard");
+      router.replace("/dashboard");
     } catch (err: any) {
       Alert.alert("Đăng ký thất bại", err.message);
     }
@@ -153,8 +210,32 @@ export default function PartnerRegisterScreen() {
                 </View>
               </View>
 
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Xác nhận mật khẩu</Text>
+
+                <View style={styles.inputWrapper}>
+                  <Ionicons
+                    name="lock-closed-outline"
+                    size={18}
+                    color={Colors.textMuted}
+                    style={styles.inputIcon}
+                  />
+
+                  <TextInput
+                    style={styles.input}
+                    secureTextEntry={!showPassword}
+                    placeholder="Nhập lại mật khẩu"
+                    value={form.confirmPassword}
+                    onChangeText={(v) => update("confirmPassword", v)}
+                  />
+                </View>
+              </View>
+
               <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
-                <LinearGradient colors={PARTNER_GRAD} style={styles.btnGradient}>
+                <LinearGradient
+                  colors={PARTNER_GRAD}
+                  style={styles.btnGradient}
+                >
                   <Text style={styles.btnText}>Tiếp theo</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -198,7 +279,10 @@ export default function PartnerRegisterScreen() {
               />
 
               <TouchableOpacity style={styles.nextBtn} onPress={handleNext}>
-                <LinearGradient colors={PARTNER_GRAD} style={styles.btnGradient}>
+                <LinearGradient
+                  colors={PARTNER_GRAD}
+                  style={styles.btnGradient}
+                >
                   <Text style={styles.btnText}>Tiếp theo</Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -214,7 +298,10 @@ export default function PartnerRegisterScreen() {
                 onPress={handleRegister}
                 disabled={isLoading}
               >
-                <LinearGradient colors={PARTNER_GRAD} style={styles.btnGradient}>
+                <LinearGradient
+                  colors={PARTNER_GRAD}
+                  style={styles.btnGradient}
+                >
                   {isLoading ? (
                     <ActivityIndicator color="#fff" />
                   ) : (

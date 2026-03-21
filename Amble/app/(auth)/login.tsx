@@ -15,6 +15,7 @@ import { Link, useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { useAuthStore } from "../../store/authStore";
 import { Ionicons } from "@expo/vector-icons";
+import AmbleLogo from "../../components/AmbleLogo";
 
 // ─── Design tokens ───
 const PRIMARY = "#FF6B35";
@@ -58,7 +59,6 @@ export default function LoginScreen() {
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-
         {/* ─── Gradient Header ─── */}
         <LinearGradient
           colors={GRAD}
@@ -77,11 +77,11 @@ export default function LoginScreen() {
           <View style={styles.decCircle1} />
           <View style={styles.decCircle2} />
 
-          <View style={styles.logoContainer}>
-            <Text style={styles.logoIcon}>A</Text>
-          </View>
-
-          <Text style={styles.appName}>Amble</Text>
+          <AmbleLogo
+            size="lg"
+            textColor="#FFFFFF"
+            containerStyle={styles.appLogo}
+          />
           <Text style={styles.tagline}>Khám phá hành trình của bạn</Text>
         </LinearGradient>
 
@@ -122,7 +122,11 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.inputWrapper}>
-              <Ionicons name="lock-closed-outline" size={18} color={TEXT_MUTED} />
+              <Ionicons
+                name="lock-closed-outline"
+                size={18}
+                color={TEXT_MUTED}
+              />
 
               <TextInput
                 style={styles.input}
@@ -196,7 +200,6 @@ export default function LoginScreen() {
 }
 
 const styles = StyleSheet.create({
-
   container: {
     flex: 1,
     backgroundColor: BG,
@@ -248,28 +251,8 @@ const styles = StyleSheet.create({
     backgroundColor: "rgba(255,255,255,0.08)",
   },
 
-  logoContainer: {
-    width: 80,
-    height: 80,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    borderRadius: 24,
-    alignItems: "center",
-    justifyContent: "center",
+  appLogo: {
     marginBottom: 14,
-    borderWidth: 2,
-    borderColor: "rgba(255,255,255,0.35)",
-  },
-
-  logoIcon: {
-    fontSize: 36,
-    fontWeight: "bold",
-    color: "#fff",
-  },
-
-  appName: {
-    fontSize: 36,
-    fontWeight: "900",
-    color: "#fff",
   },
 
   tagline: {
@@ -412,5 +395,4 @@ const styles = StyleSheet.create({
     color: PRIMARY,
     fontWeight: "700",
   },
-
 });

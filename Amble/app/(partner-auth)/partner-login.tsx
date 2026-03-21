@@ -21,6 +21,7 @@ import {
   Typography,
 } from "../../constants/theme";
 import { usePartnerAuthStore } from "../../store/partnerAuthStore";
+import AmbleLogo from "../../components/AmbleLogo";
 
 const PARTNER_PRIMARY = "#FF6B35";
 const PARTNER_GRAD: [string, string] = ["#FF6B35", "#FFD700"];
@@ -41,7 +42,7 @@ export default function PartnerLoginScreen() {
 
     try {
       await login(email.trim().toLowerCase(), password);
-      router.replace("/(partner)/dashboard");
+      router.replace("/dashboard");
     } catch (error: any) {
       Alert.alert("Đăng nhập thất bại", error.message);
     }
@@ -63,9 +64,11 @@ export default function PartnerLoginScreen() {
           start={{ x: 0, y: 0 }}
           end={{ x: 1, y: 1 }}
         >
-          <View style={styles.logoContainer}>
-            <Ionicons name="restaurant" size={36} color="#fff" />
-          </View>
+          <AmbleLogo
+            size="md"
+            showText={false}
+            containerStyle={styles.partnerLogo}
+          />
 
           <Text style={styles.appName}>Amble Partner</Text>
           <Text style={styles.tagline}>Quản lý nhà hàng của bạn</Text>
@@ -167,18 +170,10 @@ export default function PartnerLoginScreen() {
           </View>
 
           {/* Demo account */}
-          <View style={styles.demoBox}>
-            <View style={styles.demoTitleRow}>
-              <Ionicons name="key-outline" size={16} color={PARTNER_PRIMARY} />
-              <Text style={styles.demoTitle}>Tài khoản demo</Text>
-            </View>
-
-            <Text style={styles.demoText}>Email: partner@rooftop.vn</Text>
-            <Text style={styles.demoText}>Mật khẩu: demo123</Text>
-          </View>
+       
 
           {/* Packages */}
-          <View style={styles.packagesRow}>
+          {/* <View style={styles.packagesRow}>
             {[
               { label: "Basic", color: "#6B7280", price: "299K" },
               { label: "Pro", color: "#3B82F6", price: "799K" },
@@ -196,7 +191,7 @@ export default function PartnerLoginScreen() {
                 </Text>
               </View>
             ))}
-          </View>
+          </View> */}
 
           {/* Register */}
           <View style={styles.registerRow}>
@@ -215,14 +210,8 @@ export default function PartnerLoginScreen() {
             onPress={() => router.push("/(auth)/login")}
           >
             <View style={styles.backRow}>
-              <Ionicons
-                name="arrow-back"
-                size={16}
-                color={Colors.textMuted}
-              />
-              <Text style={styles.backText}>
-                Quay lại đăng nhập khách hàng
-              </Text>
+              <Ionicons name="arrow-back" size={16} color={Colors.textMuted} />
+              <Text style={styles.backText}>Quay lại đăng nhập khách hàng</Text>
             </View>
           </TouchableOpacity>
         </View>
@@ -243,13 +232,7 @@ const styles = StyleSheet.create({
     borderBottomRightRadius: 32,
   },
 
-  logoContainer: {
-    width: 72,
-    height: 72,
-    backgroundColor: "rgba(255,255,255,0.25)",
-    borderRadius: 20,
-    alignItems: "center",
-    justifyContent: "center",
+  partnerLogo: {
     marginBottom: Spacing.sm,
   },
 

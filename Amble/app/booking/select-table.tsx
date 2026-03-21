@@ -90,6 +90,7 @@ interface Table {
   images: string[];
   features: string[];
   isActive: boolean;
+  isAvailable: boolean;
   description?: string;
 }
 
@@ -168,7 +169,7 @@ export default function SelectTableScreen() {
   };
 
   const handleSelectTable = (table: Table) => {
-    if (!table.isActive) return;
+    if (!table.isActive || !table.isAvailable) return;
     setSelectedTableId(table._id);
     openDrawer();
   };
@@ -345,7 +346,7 @@ export default function SelectTableScreen() {
           {Object.entries(TABLE_TYPE_CONFIG).map(([type, cfg]) => {
             const total = tables.filter((t) => t.type === type).length;
             const avail = tables.filter(
-              (t) => t.type === type && t.isActive,
+              (t) => t.type === type && t.isActive && t.isAvailable,
             ).length;
             if (!total) return null;
             const active = selectedType === type;
@@ -362,17 +363,17 @@ export default function SelectTableScreen() {
                 onPress={() => setSelectedType(active ? null : type)}
               >
                 <View style={s.chipContent}>
-  <Ionicons
-    name={cfg.icon}
-    size={14}
-    color={active ? cfg.color : "#6B7280"}
-    style={{paddingLeft: 8}}
-  />
+                  <Ionicons
+                    name={cfg.icon}
+                    size={14}
+                    color={active ? cfg.color : "#6B7280"}
+                    style={{ paddingLeft: 8 }}
+                  />
 
-  <Text style={[s.chipTxt, active && { color: cfg.color }]}>
-    {cfg.label} ({avail}/{total})
-  </Text>
-</View>
+                  <Text style={[s.chipTxt, active && { color: cfg.color }]}>
+                    {cfg.label} ({avail}/{total})
+                  </Text>
+                </View>
               </TouchableOpacity>
             );
           })}
@@ -828,10 +829,8 @@ const s = StyleSheet.create({
   },
   contBtnTxt: { color: "#fff", fontSize: 16, fontWeight: "800" },
   chipContent: {
-  flexDirection: "row",
-  alignItems: "center",
-  gap: 6,
-},
-
-
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
 });

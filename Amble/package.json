@@ -11,6 +11,7 @@
     "reset-project": "node ./scripts/reset-project.js"
   },
   "dependencies": {
+    "@expo-google-fonts/montserrat": "^0.4.2",
     "@expo/vector-icons": "^14.0.0",
     "@google/generative-ai": "^0.24.1",
     "@react-native-async-storage/async-storage": "1.23.1",
@@ -21,6 +22,7 @@
     "expo-constants": "~16.0.2",
     "expo-font": "~12.0.5",
     "expo-haptics": "~13.0.1",
+    "expo-image-picker": "~15.1.0",
     "expo-linear-gradient": "~13.0.2",
     "expo-linking": "~6.3.1",
     "expo-router": "~3.5.14",
