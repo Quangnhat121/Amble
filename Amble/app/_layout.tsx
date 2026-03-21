@@ -33,7 +33,8 @@ export default function RootLayout() {
       pathname.startsWith("/tables") ||
       pathname.startsWith("/orders") ||
       pathname.startsWith("/notifications") ||
-      pathname.startsWith("/profile");
+      pathname.startsWith("/profile") ||
+      pathname.startsWith("/restaurant-setup");
     const inTabsGroup =
       pathname.startsWith("/(tabs)") ||
       pathname === "/" ||

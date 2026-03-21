@@ -43,7 +43,7 @@ export default function PartnerLoginScreen() {
 
     try {
       await login(email.trim().toLowerCase(), password);
-      router.replace("/(partner)/dashboard");
+      router.replace("/dashboard");
     } catch (error: any) {
       Alert.alert(t("auth.loginFailed"), error.message);
     }

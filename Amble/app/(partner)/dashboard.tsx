@@ -142,7 +142,7 @@ export default function PartnerDashboard() {
             {/* Notification bell */}
             <TouchableOpacity
               style={styles.iconBtn}
-              onPress={() => router.push('./(partner)/notifications')}
+              onPress={() => router.push('/notifications')}
             >
               <Text style={styles.iconBtnEmoji}>🔔</Text>
               {pendingBookings.length > 0 && (
@@ -154,7 +154,7 @@ export default function PartnerDashboard() {
             {/* Settings */}
             <TouchableOpacity
               style={styles.iconBtn}
-              onPress={() => router.push('./(partner)/profile')}
+              onPress={() => router.push('/profile')}
             >
               <Text style={styles.iconBtnEmoji}>⚙️</Text>
             </TouchableOpacity>
@@ -249,7 +249,7 @@ export default function PartnerDashboard() {
           <Animated.View style={slideUp(ordersAnim)}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>{t('partner.dashboard.section.pending')}</Text>
-              <TouchableOpacity onPress={() => router.push('./(partner)/orders')}>
+              <TouchableOpacity onPress={() => router.push('/orders')}>
                 <Text style={styles.sectionLink}>{t('partner.dashboard.section.viewAll')}</Text>
               </TouchableOpacity>
             </View>
@@ -304,10 +304,10 @@ export default function PartnerDashboard() {
           <Text style={styles.sectionTitle}>{t('partner.dashboard.section.quick')}</Text>
           <View style={styles.quickGrid}>
             {[
-              { emoji: '🪑', label: t('partner.dashboard.quick.tables'),    path: '/(partner)/tables' },
-              { emoji: '📋', label: t('partner.dashboard.quick.orders'),    path: '/(partner)/orders' },
-              { emoji: '🏪', label: t('partner.dashboard.quick.profile'), path: '/(partner)/profile' },
-              { emoji: '🎫', label: t('partner.dashboard.quick.voucher'),         path: '/(partner)/vouchers' },
+              { emoji: '🪑', label: t('partner.dashboard.quick.tables'),    path: '/tables' },
+              { emoji: '📋', label: t('partner.dashboard.quick.orders'),    path: '/orders' },
+              { emoji: '🏪', label: t('partner.dashboard.quick.profile'), path: '/profile' },
+              { emoji: '🎫', label: t('partner.dashboard.quick.voucher'),         path: '/vouchers' },
             ].map((item) => (
               <TouchableOpacity
                 key={item.label}

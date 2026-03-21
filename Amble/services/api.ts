@@ -41,6 +41,29 @@ export const partnerAuthAPI = {
    logout: () => api.post('/partner/auth/logout'),
 };
 
+// ── Partner Restaurant Setup ───────────────────────────
+export const partnerRestaurantAPI = {
+  setupRestaurant: (data: {
+    name: string;
+    description?: string;
+    cuisines?: string[];
+    suitableFor?: string[];
+    priceMin?: number;
+    priceMax?: number;
+    city: string;
+    address: string;
+    phone: string;
+    openTime?: string;
+    closeTime?: string;
+    openDays?: string[];
+    hasParking?: boolean;
+    instagram?: string;
+    facebook?: string;
+    website?: string;
+    images?: string[];
+  }) => api.put('/partner/restaurants/setup', data),
+};
+
 // ── User ────────────────────────────────────────────────
 export const userAPI = {
   getProfile: () => api.get('/users/profile'),

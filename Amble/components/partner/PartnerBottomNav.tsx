@@ -9,11 +9,11 @@ import {
 import { useRouter, useSegments } from 'expo-router';
 
 const TABS = [
-  { name: 'dashboard', label: 'Dashboard', emoji: '🏠', path: '/(partner)/dashboard' },
-  { name: 'tables',    label: 'Bàn',       emoji: '🪑', path: '/(partner)/tables' },
-  { name: 'orders',    label: 'Đơn',       emoji: '📋', path: '/(partner)/orders' },
-  { name: 'notifications', label: 'Thông báo', emoji: '🔔', path: '/(partner)/notifications' },
-  { name: 'profile',   label: 'Hồ sơ',    emoji: '🏪', path: '/(partner)/profile' },
+  { name: 'dashboard', label: 'Dashboard', emoji: '🏠', path: '/dashboard' },
+  { name: 'tables',    label: 'Bàn',       emoji: '🪑', path: '/tables' },
+  { name: 'orders',    label: 'Đơn',       emoji: '📋', path: '/orders' },
+  { name: 'notifications', label: 'Thông báo', emoji: '🔔', path: '/notifications' },
+  { name: 'profile',   label: 'Hồ sơ',    emoji: '🏪', path: '/profile' },
 ];
 
 interface PartnerBottomNavProps {
