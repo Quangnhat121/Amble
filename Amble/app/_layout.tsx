@@ -32,9 +32,13 @@ export default function RootLayout() {
     const inPartnerAuthGroup =
       pathname.startsWith("/partner-login") ||
       pathname.startsWith("/partner-register") ||
+      pathname.startsWith("/partner-setup") ||
       pathname.startsWith("/(partner-auth)");
+
     const inPartnerGroup =
       pathname.includes("/dashboard") ||
+      pathname.includes("/packages") ||
+      pathname.includes("/vouchers") ||
       pathname.includes("/tables") ||
       pathname.includes("/orders") ||
       pathname.includes("/notifications") ||

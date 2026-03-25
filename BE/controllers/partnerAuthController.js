@@ -1,11 +1,142 @@
 const jwt = require("jsonwebtoken");
 const Partner = require("../models/partner");
 const Restaurant = require("../models/restaurant");
+const ServicePackage = require("../models/servicePackage");
+
+const DEFAULT_SERVICE_PACKAGES = [
+  {
+    key: "basic",
+    label: "Basic",
+    badge: "",
+    priceMonthly: 299000,
+    currency: "VND",
+    order: 1,
+    tone: "#F9FAFB",
+    border: "#E5E7EB",
+    accent: "#6B7280",
+    iconBg: "#F3F4F6",
+    features: [
+      { text: "Hiển thị trên danh sách nhà hàng", included: true, order: 1 },
+      { text: "Quản lý tối đa 10 bàn", included: true, order: 2 },
+      { text: "Nhận đặt bàn cơ bản", included: true, order: 3 },
+      { text: "Hồ sơ nhà hàng", included: true, order: 4 },
+      { text: "Ưu tiên hiển thị trang chủ", included: false, order: 5 },
+      { text: "Voucher & khuyến mãi", included: false, order: 6 },
+      { text: "Phân tích chi tiết", included: false, order: 7 },
+    ],
+  },
+  {
+    key: "pro",
+    label: "Pro",
+    badge: "Phổ biến",
+    priceMonthly: 799000,
+    currency: "VND",
+    order: 2,
+    tone: "#EFF6FF",
+    border: "#93C5FD",
+    accent: "#3B82F6",
+    iconBg: "#DBEAFE",
+    features: [
+      { text: "Tất cả Basic", included: true, order: 1 },
+      { text: "Quản lý không giới hạn bàn", included: true, order: 2 },
+      {
+        text: "Ưu tiên hiển thị trang chủ (mức trung)",
+        included: true,
+        order: 3,
+      },
+      { text: "AI gợi ý cho khách hàng", included: true, order: 4 },
+      { text: "Tạo Voucher & khuyến mãi", included: true, order: 5 },
+      { text: "Thống kê cơ bản", included: true, order: 6 },
+      { text: "Hỗ trợ ưu tiên", included: true, order: 7 },
+      { text: "Top đề xuất trang chủ", included: false, order: 8 },
+    ],
+  },
+  {
+    key: "premium",
+    label: "Premium",
+    badge: "Cao cấp",
+    priceMonthly: 1499000,
+    currency: "VND",
+    order: 3,
+    tone: "#FAF5FF",
+    border: "#C4B5FD",
+    accent: "#9333EA",
+    iconBg: "#F3E8FF",
+    features: [
+      { text: "Tất cả Pro", included: true, order: 1 },
+      { text: "Top đề xuất trang chủ Amble", included: true, order: 2 },
+      { text: "Badge Premium hiển thị nổi bật", included: true, order: 3 },
+      { text: "AI ưu tiên gợi ý cho khách", included: true, order: 4 },
+      { text: "Phân tích chi tiết & báo cáo", included: true, order: 5 },
+      { text: "Hỗ trợ 24/7 ưu tiên cao nhất", included: true, order: 6 },
+      { text: "Tùy chỉnh trang nhà hàng", included: true, order: 7 },
+      { text: "Chiến dịch marketing đặc biệt", included: true, order: 8 },
+    ],
+  },
+];
+
+const syncDefaultServicePackages = async () => {
+  await Promise.all(
+    DEFAULT_SERVICE_PACKAGES.map((item) =>
+      ServicePackage.findOneAndUpdate(
+        { key: item.key },
+        { $set: item },
+        { upsert: true },
+      ),
+    ),
+  );
+};
+
+const formatPriceVND = (value = 0) => {
+  try {
+    return `${new Intl.NumberFormat("vi-VN").format(value)}đ`;
+  } catch {
+    return `${value}đ`;
+  }
+};
 
 const signToken = (id, type = "partner") => {
   return jwt.sign({ id, type }, process.env.JWT_SECRET, {
     expiresIn: process.env.JWT_EXPIRES_IN || "7d",
   });
+};
+
+exports.getPackages = async (req, res) => {
+  try {
+    await syncDefaultServicePackages();
+
+    const packages = await ServicePackage.find({ isActive: true })
+      .sort({ order: 1, createdAt: 1 })
+      .lean();
+
+    return res.status(200).json({
+      success: true,
+      packages: packages.map((item) => ({
+        key: item.key,
+        label: item.label,
+        badge: item.badge || "",
+        price: formatPriceVND(item.priceMonthly),
+        priceMonthly: item.priceMonthly,
+        currency: item.currency || "VND",
+        tone: item.tone,
+        border: item.border,
+        accent: item.accent,
+        iconBg: item.iconBg,
+        features: (item.features || [])
+          .slice()
+          .sort((a, b) => (a.order || 0) - (b.order || 0))
+          .map((feature) => ({
+            text: feature.text,
+            included: !!feature.included,
+          })),
+      })),
+    });
+  } catch (error) {
+    console.error(error);
+    return res
+      .status(500)
+      .json({ success: false, message: "Lỗi máy chủ. Vui lòng thử lại." });
+  }
 };
 
 // Register partner
@@ -30,6 +161,21 @@ exports.register = async (req, res) => {
       });
     }
 
+    await syncDefaultServicePackages();
+
+    const selectedPackage = (subscriptionPackage || "basic").toLowerCase();
+    const packageExists = await ServicePackage.exists({
+      key: selectedPackage,
+      isActive: true,
+    });
+
+    if (!packageExists) {
+      return res.status(400).json({
+        success: false,
+        message: "Gói dịch vụ không hợp lệ.",
+      });
+    }
+
     const existing = await Partner.findOne({ email });
     if (existing) {
       return res.status(400).json({
@@ -47,7 +193,7 @@ exports.register = async (req, res) => {
       restaurantAddress: restaurantAddress || "",
       restaurantCity: restaurantCity || "",
       cuisine: cuisine || "",
-      subscriptionPackage: subscriptionPackage || "basic",
+      subscriptionPackage: selectedPackage,
       subscriptionStatus: "pending",
       role: "owner",
     });
@@ -137,12 +283,12 @@ exports.logout = async (req, res) => {
   try {
     return res.status(200).json({
       success: true,
-      message: "Đăng xuất thành công"
+      message: "Đăng xuất thành công",
     });
   } catch (error) {
     return res.status(500).json({
       success: false,
-      message: "Lỗi máy chủ"
+      message: "Lỗi máy chủ",
     });
   }
 };

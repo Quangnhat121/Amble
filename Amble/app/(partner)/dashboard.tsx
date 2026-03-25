@@ -243,11 +243,16 @@ export default function PartnerDashboard() {
               {partner?.restaurantName || restaurant?.name || "Nhà hàng"}
             </Text>
           </View>
-          <View style={[styles.pkgBadge, { backgroundColor: pkg.bg }]}>
+          <TouchableOpacity
+            style={[styles.pkgBadge, { backgroundColor: pkg.bg }]}
+            onPress={() => router.push("/packages" as any)}
+            activeOpacity={0.85}
+          >
             <Text style={[styles.pkgBadgeText, { color: pkg.color }]}>
               {pkg.label}
             </Text>
-          </View>
+            <Ionicons name="chevron-forward" size={12} color={pkg.color} />
+          </TouchableOpacity>
         </Animated.View>
 
         {/* ── Stats grid ─────────────────────────────────────── */}
@@ -434,6 +439,16 @@ export default function PartnerDashboard() {
                 iconName: "business-outline",
                 label: "Hồ sơ nhà hàng",
                 path: "/profile",
+              },
+              {
+                iconName: "pricetags-outline",
+                label: "Gói dịch vụ",
+                path: "/packages",
+              },
+              {
+                iconName: "ticket-outline",
+                label: "Tạo voucher",
+                path: "/vouchers",
               },
               // {
               //   iconName: "notifications-outline",

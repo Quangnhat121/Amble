@@ -33,9 +33,14 @@ const PAYMENT_METHODS: {
 
 interface VoucherItem {
   code: string;
+  title?: string;
+  description?: string;
   discount: number;
   minBill: number;
+  maxDiscount?: number;
   isPercent: boolean;
+  startAt?: string;
+  endAt?: string;
 }
 
 const TABLE_TYPE_LABELS: Record<string, string> = {
@@ -89,7 +94,7 @@ export default function ConfirmBookingScreen() {
   useEffect(() => {
     const loadVouchers = async () => {
       try {
-        const res = await bookingAPI.getVouchers();
+        const res = await bookingAPI.getVouchers(restaurantId as string);
         setVouchers(res.data?.vouchers || []);
       } catch {
         setVouchers([]);
@@ -102,7 +107,10 @@ export default function ConfirmBookingScreen() {
 
   const discount = appliedVoucher
     ? appliedVoucher.isPercent
-      ? (depositAmt * appliedVoucher.discount) / 100
+      ? Math.min(
+          appliedVoucher.maxDiscount || Number.MAX_SAFE_INTEGER,
+          (depositAmt * appliedVoucher.discount) / 100,
+        )
       : appliedVoucher.discount
     : 0;
   const total = Math.max(0, depositAmt - discount);
@@ -135,6 +143,15 @@ export default function ConfirmBookingScreen() {
         month: "long",
         day: "numeric",
       });
+    } catch {
+      return d;
+    }
+  };
+
+  const formatShortDate = (d?: string) => {
+    if (!d) return "";
+    try {
+      return new Date(d).toLocaleDateString("vi-VN");
     } catch {
       return d;
     }
@@ -340,6 +357,48 @@ export default function ConfirmBookingScreen() {
               </TouchableOpacity>
             ))}
           </View>
+
+          {vouchers.length > 0 && (
+            <View style={s.voucherList}>
+              {vouchers.map((voucher) => {
+                const discountText = voucher.isPercent
+                  ? `Giảm ${voucher.discount}%`
+                  : `Giảm ${voucher.discount.toLocaleString("vi-VN")}đ`;
+                const minBillText = `Áp dụng từ ${voucher.minBill.toLocaleString("vi-VN")}đ`;
+
+                return (
+                  <TouchableOpacity
+                    key={`${voucher.code}-card`}
+                    style={[
+                      s.voucherCard,
+                      appliedVoucher?.code === voucher.code &&
+                        s.voucherCardActive,
+                    ]}
+                    onPress={() => {
+                      setVoucherInput(voucher.code);
+                      setVoucherError("");
+                    }}
+                    activeOpacity={0.85}
+                  >
+                    <View style={s.voucherCardTop}>
+                      <Text style={s.voucherCode}>{voucher.code}</Text>
+                      <Text style={s.voucherDiscount}>{discountText}</Text>
+                    </View>
+                    {!!voucher.title && (
+                      <Text style={s.voucherTitle}>{voucher.title}</Text>
+                    )}
+                    <Text style={s.voucherCondition}>{minBillText}</Text>
+                    {!!voucher.endAt && (
+                      <Text style={s.voucherExpiry}>
+                        Hết hạn: {formatShortDate(voucher.endAt)}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          )}
+
           {voucherLoading && (
             <Text style={s.voucherHint}>Đang tải voucher...</Text>
           )}
@@ -591,6 +650,52 @@ const s = StyleSheet.create({
     borderStyle: "dashed",
   },
   quickChipTxt: { fontSize: 11, color: "#FF6B35", fontWeight: "700" },
+  voucherList: {
+    marginTop: 10,
+    gap: 8,
+  },
+  voucherCard: {
+    borderWidth: 1,
+    borderColor: "#E5E7EB",
+    borderRadius: 10,
+    backgroundColor: "#fff",
+    padding: 10,
+  },
+  voucherCardActive: {
+    borderColor: "#FF6B35",
+    backgroundColor: "#FFF6F2",
+  },
+  voucherCardTop: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginBottom: 4,
+  },
+  voucherCode: {
+    fontSize: 13,
+    fontWeight: "800",
+    color: "#111827",
+  },
+  voucherDiscount: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#16A34A",
+  },
+  voucherTitle: {
+    fontSize: 12,
+    fontWeight: "700",
+    color: "#374151",
+    marginBottom: 2,
+  },
+  voucherCondition: {
+    fontSize: 11,
+    color: "#6B7280",
+  },
+  voucherExpiry: {
+    marginTop: 2,
+    fontSize: 11,
+    color: "#9CA3AF",
+  },
   voucherHint: { fontSize: 11, color: "#9CA3AF", marginTop: 6 },
   pmSelector: {
     flexDirection: "row",

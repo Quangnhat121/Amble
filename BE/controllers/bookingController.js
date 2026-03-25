@@ -1,16 +1,50 @@
 const Booking = require("../models/booking");
 const Table = require("../models/table");
 const Restaurant = require("../models/restaurant");
-
-const BOOKING_VOUCHERS = [
-  { code: "AMBLE10", discount: 10, minBill: 50000, isPercent: true },
-  { code: "GENZ2025", discount: 20000, minBill: 100000, isPercent: false },
-  { code: "VIP50", discount: 50000, minBill: 200000, isPercent: false },
-];
+const Voucher = require("../models/voucher");
 
 // ── GET /api/booking/vouchers ────────────────────────────
 exports.getBookingVouchers = async (req, res) => {
-  return res.json({ success: true, vouchers: BOOKING_VOUCHERS });
+  try {
+    const now = new Date();
+    const { restaurantId } = req.query;
+
+    const filter = {
+      isActive: true,
+      startAt: { $lte: now },
+      endAt: { $gt: now },
+    };
+
+    if (restaurantId) {
+      filter.restaurantId = restaurantId;
+    }
+
+    const vouchers = await Voucher.find(filter)
+      .sort({ discountValue: -1, createdAt: -1 })
+      .lean();
+
+    const items = vouchers
+      .filter((voucher) => {
+        if (!voucher.usageLimit || voucher.usageLimit <= 0) return true;
+        return (voucher.usedCount || 0) < voucher.usageLimit;
+      })
+      .map((voucher) => ({
+        code: voucher.code,
+        title: voucher.title,
+        description: voucher.description || "",
+        discount: voucher.discountValue,
+        minBill: voucher.minBill || 0,
+        maxDiscount: voucher.maxDiscount || 0,
+        isPercent: voucher.discountType === "percent",
+        startAt: voucher.startAt,
+        endAt: voucher.endAt,
+      }));
+
+    return res.json({ success: true, vouchers: items });
+  } catch (err) {
+    console.error("[getBookingVouchers]", err);
+    return res.status(500).json({ success: false, message: "Lỗi server" });
+  }
 };
 
 // ── GET /api/booking/tables/:restaurantId ─────────────────
@@ -41,7 +75,6 @@ exports.createBooking = async (req, res) => {
       specialRequests,
       paymentMethod,
       voucherCode,
-      voucherDiscount,
     } = req.body;
 
     if (!userId || !restaurantId || !tableId || !date || !time || !partySize) {
@@ -76,7 +109,58 @@ exports.createBooking = async (req, res) => {
     }
 
     const depositAmount = table.pricing.baseDeposit;
-    const discount = voucherDiscount || 0;
+    let discount = 0;
+    let appliedVoucherData = undefined;
+
+    if (voucherCode) {
+      const now = new Date();
+      const normalizedCode = String(voucherCode).trim().toUpperCase();
+
+      const voucher = await Voucher.findOne({
+        restaurantId,
+        code: normalizedCode,
+        isActive: true,
+        startAt: { $lte: now },
+        endAt: { $gt: now },
+      });
+
+      if (!voucher) {
+        return res.status(400).json({
+          success: false,
+          message: "Voucher không hợp lệ hoặc đã hết hạn",
+        });
+      }
+
+      if (voucher.usageLimit > 0 && voucher.usedCount >= voucher.usageLimit) {
+        return res.status(400).json({
+          success: false,
+          message: "Voucher đã hết lượt sử dụng",
+        });
+      }
+
+      if (depositAmount < (voucher.minBill || 0)) {
+        return res.status(400).json({
+          success: false,
+          message: "Hóa đơn chưa đủ điều kiện áp dụng voucher",
+        });
+      }
+
+      discount =
+        voucher.discountType === "percent"
+          ? (depositAmount * voucher.discountValue) / 100
+          : voucher.discountValue;
+
+      if (voucher.discountType === "percent" && voucher.maxDiscount > 0) {
+        discount = Math.min(discount, voucher.maxDiscount);
+      }
+
+      discount = Math.min(depositAmount, Math.round(discount));
+      appliedVoucherData = {
+        code: voucher.code,
+        discountValue: discount,
+      };
+    }
+
     const totalAmount = Math.max(0, depositAmount - discount);
 
     // ── Generate bookingNumber tại đây để tránh lỗi validation ──
@@ -100,9 +184,7 @@ exports.createBooking = async (req, res) => {
         depositAmount,
         voucherDiscount: discount,
         totalAmount,
-        appliedVoucher: voucherCode
-          ? { code: voucherCode, discountValue: discount }
-          : undefined,
+        appliedVoucher: appliedVoucherData,
       },
       payment: paymentMethod ? { method: paymentMethod } : undefined,
       status: "pending",
@@ -113,6 +195,16 @@ exports.createBooking = async (req, res) => {
       isAvailable: false,
       currentBookingId: booking._id,
     });
+
+    if (appliedVoucherData) {
+      await Voucher.findOneAndUpdate(
+        {
+          restaurantId,
+          code: appliedVoucherData.code,
+        },
+        { $inc: { usedCount: 1 } },
+      );
+    }
 
     return res.json({
       success: true,

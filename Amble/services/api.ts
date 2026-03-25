@@ -36,6 +36,23 @@ export const authAPI = {
 
 // ── Partner Auth ────────────────────────────────────────
 export const partnerAuthAPI = {
+  getPackages: () =>
+    api.get<{
+      success: boolean;
+      packages: Array<{
+        key: "basic" | "pro" | "premium";
+        label: string;
+        badge: string;
+        price: string;
+        priceMonthly: number;
+        currency: string;
+        tone: string;
+        border: string;
+        accent: string;
+        iconBg: string;
+        features: Array<{ text: string; included: boolean }>;
+      }>;
+    }>("/partner/auth/packages"),
   register: (data: {
     ownerName: string;
     email: string;
@@ -92,7 +109,8 @@ export const bookingAPI = {
     api.get(`/booking/tables/${restaurantId}`),
 
   // Voucher danh mục cho flow đặt bàn
-  getVouchers: () => api.get("/booking/vouchers"),
+  getVouchers: (restaurantId?: string) =>
+    api.get("/booking/vouchers", { params: { restaurantId } }),
 
   // Tạo booking (1 bước: create + confirm + pay)
   create: (data: {
@@ -162,7 +180,63 @@ export const partnerDashboardAPI = {
   ) => api.put(`/partner/tables/${tableId}`, data),
   deleteTable: (tableId: string) => api.delete(`/partner/tables/${tableId}`),
   getNotifications: () => api.get("/partner/notifications"),
+  getVouchers: () =>
+    api.get<{
+      success: boolean;
+      vouchers: Array<{
+        id: string;
+        code: string;
+        title: string;
+        description: string;
+        discountType: "percent" | "amount";
+        discountValue: number;
+        minBill: number;
+        maxDiscount: number;
+        usageLimit: number;
+        usedCount: number;
+        remainingUses: number | null;
+        startAt: string;
+        endAt: string;
+        isActive: boolean;
+        isExpired: boolean;
+      }>;
+    }>("/partner/vouchers"),
+  createVoucher: (data: {
+    code: string;
+    title: string;
+    description?: string;
+    discountType: "percent" | "amount";
+    discountValue: number;
+    minBill?: number;
+    maxDiscount?: number;
+    usageLimit?: number;
+    startAt?: string;
+    endAt?: string;
+    expiresInDays?: number;
+  }) => api.post("/partner/vouchers", data),
+  updateVoucher: (
+    voucherId: string,
+    data: {
+      code: string;
+      title: string;
+      description?: string;
+      discountType: "percent" | "amount";
+      discountValue: number;
+      minBill?: number;
+      maxDiscount?: number;
+      usageLimit?: number;
+      startAt: string;
+      endAt: string;
+    },
+  ) => api.put(`/partner/vouchers/${voucherId}`, data),
+  deleteVoucher: (voucherId: string) =>
+    api.delete(`/partner/vouchers/${voucherId}`),
+  updateVoucherStatus: (voucherId: string, isActive: boolean) =>
+    api.patch(`/partner/vouchers/${voucherId}/status`, { isActive }),
   getRestaurantProfile: () => api.get("/partner/restaurant-profile"),
+  updateSubscriptionPackage: (
+    subscriptionPackage: "basic" | "pro" | "premium",
+  ) => api.put("/partner/subscription-package", { subscriptionPackage }),
   updateRestaurantProfile: (data: {
     coverImage?: string;
     name?: string;

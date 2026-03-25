@@ -1,6 +1,9 @@
 const Booking = require("../models/booking");
 const Table = require("../models/table");
 const Restaurant = require("../models/restaurant");
+const Partner = require("../models/partner");
+const ServicePackage = require("../models/servicePackage");
+const Voucher = require("../models/voucher");
 
 const VALID_TABLE_TYPES = ["vip", "view", "regular", "standard"];
 const VALID_OPEN_DAYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
@@ -10,6 +13,86 @@ const normalizeImageList = (images) => {
   return images
     .map((url) => String(url || "").trim())
     .filter((url) => url.length > 0);
+};
+
+const toPositiveNumber = (value) => {
+  const num = Number(value);
+  return Number.isFinite(num) ? num : NaN;
+};
+
+// PUT /api/partner/subscription-package
+exports.updateSubscriptionPackage = async (req, res) => {
+  try {
+    const partnerId = req.partner?._id;
+    const restaurantId = req.partner?.restaurantId;
+    const nextPackage = String(
+      req.body?.subscriptionPackage || "",
+    ).toLowerCase();
+
+    if (!nextPackage) {
+      return res.status(400).json({
+        success: false,
+        message: "Vui lòng chọn gói dịch vụ.",
+      });
+    }
+
+    const packageExists = await ServicePackage.exists({
+      key: nextPackage,
+      isActive: true,
+    });
+
+    if (!packageExists) {
+      return res.status(400).json({
+        success: false,
+        message: "Gói dịch vụ không hợp lệ.",
+      });
+    }
+
+    const partner = await Partner.findById(partnerId);
+    if (!partner) {
+      return res
+        .status(404)
+        .json({ success: false, message: "Không tìm thấy đối tác." });
+    }
+
+    if (partner.subscriptionPackage === nextPackage) {
+      const restaurant = restaurantId
+        ? await Restaurant.findById(restaurantId)
+        : null;
+
+      return res.status(200).json({
+        success: true,
+        message: "Gói hiện tại đã được áp dụng.",
+        partner,
+        restaurant,
+      });
+    }
+
+    partner.subscriptionPackage = nextPackage;
+    if (partner.subscriptionStatus !== "active") {
+      partner.subscriptionStatus = "active";
+    }
+    await partner.save();
+
+    let restaurant = null;
+    if (restaurantId) {
+      restaurant = await Restaurant.findByIdAndUpdate(
+        restaurantId,
+        { subscriptionPackage: nextPackage },
+        { new: true },
+      );
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: "Cập nhật gói dịch vụ thành công.",
+      partner,
+      restaurant,
+    });
+  } catch (err) {
+    console.error("[updateSubscriptionPackage]", err);
+    return res.status(500).json({ success: false, message: "Loi server" });
+  }
 };
 
 // GET /api/partner/dashboard/overview
@@ -80,6 +163,487 @@ exports.getOverview = async (req, res) => {
     });
   } catch (err) {
     console.error("[getOverview]", err);
+    return res.status(500).json({ success: false, message: "Loi server" });
+  }
+};
+
+// GET /api/partner/vouchers
+exports.getVouchers = async (req, res) => {
+  try {
+    const restaurantId = req.partner.restaurantId;
+
+    if (!restaurantId) {
+      return res.status(400).json({
+        success: false,
+        message: "Partner chưa liên kết với nhà hàng.",
+      });
+    }
+
+    const vouchers = await Voucher.find({ restaurantId })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const now = Date.now();
+    const items = vouchers.map((voucher) => {
+      const isExpired = new Date(voucher.endAt).getTime() < now;
+      const hasUsageLimit = Number(voucher.usageLimit) > 0;
+      const remainingUses = hasUsageLimit
+        ? Math.max(
+            0,
+            Number(voucher.usageLimit) - Number(voucher.usedCount || 0),
+          )
+        : null;
+
+      return {
+        id: voucher._id,
+        code: voucher.code,
+        title: voucher.title,
+        description: voucher.description || "",
+        discountType: voucher.discountType,
+        discountValue: voucher.discountValue,
+        minBill: voucher.minBill || 0,
+        maxDiscount: voucher.maxDiscount || 0,
+        usageLimit: voucher.usageLimit || 0,
+        usedCount: voucher.usedCount || 0,
+        remainingUses,
+        startAt: voucher.startAt,
+        endAt: voucher.endAt,
+        isActive: !!voucher.isActive,
+        isExpired,
+      };
+    });
+
+    return res.json({ success: true, vouchers: items });
+  } catch (err) {
+    console.error("[getVouchers]", err);
+    return res.status(500).json({ success: false, message: "Loi server" });
+  }
+};
+
+// POST /api/partner/vouchers
+exports.createVoucher = async (req, res) => {
+  try {
+    const partnerId = req.partner._id;
+    const restaurantId = req.partner.restaurantId;
+
+    if (!restaurantId) {
+      return res.status(400).json({
+        success: false,
+        message: "Partner chưa liên kết với nhà hàng.",
+      });
+    }
+
+    const {
+      code,
+      title,
+      description,
+      discountType = "amount",
+      discountValue,
+      minBill = 0,
+      maxDiscount = 0,
+      usageLimit = 0,
+      startAt,
+      endAt,
+      expiresInDays = 30,
+    } = req.body || {};
+
+    const normalizedCode = String(code || "")
+      .trim()
+      .toUpperCase();
+    const normalizedTitle = String(title || "").trim();
+    const normalizedDescription = String(description || "").trim();
+    const normalizedType = String(discountType || "").toLowerCase();
+
+    const discountNum = toPositiveNumber(discountValue);
+    const minBillNum = toPositiveNumber(minBill);
+    const maxDiscountNum = toPositiveNumber(maxDiscount);
+    const usageLimitNum = toPositiveNumber(usageLimit);
+    const expiresInDaysNum = toPositiveNumber(expiresInDays);
+
+    if (!normalizedCode) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Mã voucher là bắt buộc." });
+    }
+
+    if (!/^[A-Z0-9_-]{4,20}$/.test(normalizedCode)) {
+      return res.status(400).json({
+        success: false,
+        message: "Mã voucher chỉ gồm chữ in hoa, số, _ hoặc -, dài 4-20 ký tự.",
+      });
+    }
+
+    if (!normalizedTitle) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Tên voucher là bắt buộc." });
+    }
+
+    if (!["percent", "amount"].includes(normalizedType)) {
+      return res.status(400).json({
+        success: false,
+        message: "Loại giảm giá không hợp lệ.",
+      });
+    }
+
+    if (!Number.isFinite(discountNum) || discountNum <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Giá trị giảm giá phải lớn hơn 0.",
+      });
+    }
+
+    if (normalizedType === "percent" && discountNum > 100) {
+      return res.status(400).json({
+        success: false,
+        message: "Voucher theo % không được vượt quá 100.",
+      });
+    }
+
+    if (!Number.isFinite(minBillNum) || minBillNum < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Giá trị hóa đơn tối thiểu không hợp lệ.",
+      });
+    }
+
+    if (!Number.isFinite(maxDiscountNum) || maxDiscountNum < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Giảm tối đa không hợp lệ.",
+      });
+    }
+
+    if (!Number.isFinite(usageLimitNum) || usageLimitNum < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Số lượt sử dụng không hợp lệ.",
+      });
+    }
+
+    const startDate = startAt ? new Date(startAt) : new Date();
+    let endDate = endAt ? new Date(endAt) : null;
+
+    if (!endDate || Number.isNaN(endDate.getTime())) {
+      const safeExpires =
+        Number.isFinite(expiresInDaysNum) && expiresInDaysNum > 0
+          ? Math.floor(expiresInDaysNum)
+          : 30;
+      endDate = new Date(
+        startDate.getTime() + safeExpires * 24 * 60 * 60 * 1000,
+      );
+    }
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Ngày bắt đầu/kết thúc không hợp lệ.",
+      });
+    }
+
+    if (endDate <= startDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Ngày kết thúc phải sau ngày bắt đầu.",
+      });
+    }
+
+    const existing = await Voucher.findOne({
+      restaurantId,
+      code: normalizedCode,
+    })
+      .select("_id")
+      .lean();
+
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: "Mã voucher đã tồn tại trong nhà hàng của bạn.",
+      });
+    }
+
+    const voucher = await Voucher.create({
+      partnerId,
+      restaurantId,
+      code: normalizedCode,
+      title: normalizedTitle,
+      description: normalizedDescription,
+      discountType: normalizedType,
+      discountValue: discountNum,
+      minBill: minBillNum,
+      maxDiscount: normalizedType === "percent" ? maxDiscountNum : 0,
+      usageLimit: Math.floor(usageLimitNum),
+      usedCount: 0,
+      startAt: startDate,
+      endAt: endDate,
+      isActive: true,
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: "Tạo voucher thành công.",
+      voucher,
+    });
+  } catch (err) {
+    if (err?.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Mã voucher đã tồn tại.",
+      });
+    }
+    console.error("[createVoucher]", err);
+    return res.status(500).json({ success: false, message: "Loi server" });
+  }
+};
+
+// PUT /api/partner/vouchers/:voucherId
+exports.updateVoucher = async (req, res) => {
+  try {
+    const restaurantId = req.partner.restaurantId;
+    const { voucherId } = req.params;
+
+    if (!restaurantId) {
+      return res.status(400).json({
+        success: false,
+        message: "Partner chưa liên kết với nhà hàng.",
+      });
+    }
+
+    const voucher = await Voucher.findOne({
+      _id: voucherId,
+      restaurantId,
+    });
+
+    if (!voucher) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy voucher.",
+      });
+    }
+
+    const {
+      code,
+      title,
+      description,
+      discountType = "amount",
+      discountValue,
+      minBill = 0,
+      maxDiscount = 0,
+      usageLimit = 0,
+      startAt,
+      endAt,
+    } = req.body || {};
+
+    const normalizedCode = String(code || "")
+      .trim()
+      .toUpperCase();
+    const normalizedTitle = String(title || "").trim();
+    const normalizedDescription = String(description || "").trim();
+    const normalizedType = String(discountType || "").toLowerCase();
+
+    const discountNum = toPositiveNumber(discountValue);
+    const minBillNum = toPositiveNumber(minBill);
+    const maxDiscountNum = toPositiveNumber(maxDiscount);
+    const usageLimitNum = toPositiveNumber(usageLimit);
+
+    if (!normalizedCode) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Mã voucher là bắt buộc." });
+    }
+
+    if (!/^[A-Z0-9_-]{4,20}$/.test(normalizedCode)) {
+      return res.status(400).json({
+        success: false,
+        message: "Mã voucher chỉ gồm chữ in hoa, số, _ hoặc -, dài 4-20 ký tự.",
+      });
+    }
+
+    if (!normalizedTitle) {
+      return res
+        .status(400)
+        .json({ success: false, message: "Tên voucher là bắt buộc." });
+    }
+
+    if (!["percent", "amount"].includes(normalizedType)) {
+      return res.status(400).json({
+        success: false,
+        message: "Loại giảm giá không hợp lệ.",
+      });
+    }
+
+    if (!Number.isFinite(discountNum) || discountNum <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Giá trị giảm giá phải lớn hơn 0.",
+      });
+    }
+
+    if (normalizedType === "percent" && discountNum > 100) {
+      return res.status(400).json({
+        success: false,
+        message: "Voucher theo % không được vượt quá 100.",
+      });
+    }
+
+    if (!Number.isFinite(minBillNum) || minBillNum < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Giá trị hóa đơn tối thiểu không hợp lệ.",
+      });
+    }
+
+    if (!Number.isFinite(maxDiscountNum) || maxDiscountNum < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Giảm tối đa không hợp lệ.",
+      });
+    }
+
+    if (!Number.isFinite(usageLimitNum) || usageLimitNum < 0) {
+      return res.status(400).json({
+        success: false,
+        message: "Số lượt sử dụng không hợp lệ.",
+      });
+    }
+
+    const startDate = new Date(startAt);
+    const endDate = new Date(endAt);
+
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      return res.status(400).json({
+        success: false,
+        message: "Ngày bắt đầu/kết thúc không hợp lệ.",
+      });
+    }
+
+    if (endDate <= startDate) {
+      return res.status(400).json({
+        success: false,
+        message: "Ngày kết thúc phải sau ngày bắt đầu.",
+      });
+    }
+
+    const existing = await Voucher.findOne({
+      restaurantId,
+      code: normalizedCode,
+      _id: { $ne: voucherId },
+    })
+      .select("_id")
+      .lean();
+
+    if (existing) {
+      return res.status(409).json({
+        success: false,
+        message: "Mã voucher đã tồn tại trong nhà hàng của bạn.",
+      });
+    }
+
+    voucher.code = normalizedCode;
+    voucher.title = normalizedTitle;
+    voucher.description = normalizedDescription;
+    voucher.discountType = normalizedType;
+    voucher.discountValue = discountNum;
+    voucher.minBill = minBillNum;
+    voucher.maxDiscount = normalizedType === "percent" ? maxDiscountNum : 0;
+    voucher.usageLimit = Math.floor(usageLimitNum);
+    voucher.startAt = startDate;
+    voucher.endAt = endDate;
+
+    if (voucher.usedCount > voucher.usageLimit && voucher.usageLimit > 0) {
+      voucher.usageLimit = voucher.usedCount;
+    }
+
+    await voucher.save();
+
+    return res.json({
+      success: true,
+      message: "Cập nhật voucher thành công.",
+      voucher,
+    });
+  } catch (err) {
+    if (err?.code === 11000) {
+      return res.status(409).json({
+        success: false,
+        message: "Mã voucher đã tồn tại.",
+      });
+    }
+    console.error("[updateVoucher]", err);
+    return res.status(500).json({ success: false, message: "Loi server" });
+  }
+};
+
+// DELETE /api/partner/vouchers/:voucherId
+exports.deleteVoucher = async (req, res) => {
+  try {
+    const restaurantId = req.partner.restaurantId;
+    const { voucherId } = req.params;
+
+    if (!restaurantId) {
+      return res.status(400).json({
+        success: false,
+        message: "Partner chưa liên kết với nhà hàng.",
+      });
+    }
+
+    const deleted = await Voucher.findOneAndDelete({
+      _id: voucherId,
+      restaurantId,
+    });
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy voucher.",
+      });
+    }
+
+    return res.json({
+      success: true,
+      message: "Đã xóa voucher.",
+    });
+  } catch (err) {
+    console.error("[deleteVoucher]", err);
+    return res.status(500).json({ success: false, message: "Loi server" });
+  }
+};
+
+// PATCH /api/partner/vouchers/:voucherId/status
+exports.updateVoucherStatus = async (req, res) => {
+  try {
+    const restaurantId = req.partner.restaurantId;
+    const { voucherId } = req.params;
+    const nextActive = !!req.body?.isActive;
+
+    if (!restaurantId) {
+      return res.status(400).json({
+        success: false,
+        message: "Partner chưa liên kết với nhà hàng.",
+      });
+    }
+
+    const voucher = await Voucher.findOne({
+      _id: voucherId,
+      restaurantId,
+    });
+
+    if (!voucher) {
+      return res.status(404).json({
+        success: false,
+        message: "Không tìm thấy voucher.",
+      });
+    }
+
+    voucher.isActive = nextActive;
+    await voucher.save();
+
+    return res.json({
+      success: true,
+      message: nextActive ? "Đã bật voucher." : "Đã tắt voucher.",
+      voucher,
+    });
+  } catch (err) {
+    console.error("[updateVoucherStatus]", err);
     return res.status(500).json({ success: false, message: "Loi server" });
   }
 };

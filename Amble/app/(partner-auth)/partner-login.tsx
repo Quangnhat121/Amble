@@ -73,7 +73,7 @@ export default function PartnerLoginScreen() {
               <Ionicons name="arrow-back" size={18} color="#fff" />
             </TouchableOpacity>
 
-            <AmbleLogo size="sm" textColor="#FFFFFF" />
+            <AmbleLogo size="lg" textColor="#FFFFFF" />
           </View>
 
           <Text style={styles.headerTitle}>Đăng Nhập Đối Tác</Text>
@@ -223,7 +223,9 @@ const styles = StyleSheet.create({
   },
 
   headerTitle: {
-    fontSize: 22,
+    paddingTop: 7,
+    marginTop: -7,
+    fontSize: 30,
     lineHeight: 28,
     fontWeight: "900",
     color: "#fff",
