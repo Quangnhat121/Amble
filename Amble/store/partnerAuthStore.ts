@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { partnerAuthAPI } from '../services/api';
+import { create } from "zustand";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { partnerAuthAPI } from "../services/api";
 
 export interface Restaurant {
   _id: string;
@@ -11,7 +11,7 @@ export interface Restaurant {
   address: string;
   phone: string;
   description: string;
-  subscriptionPackage: 'basic' | 'pro' | 'premium';
+  subscriptionPackage: "basic" | "pro" | "premium";
   rating: number;
   reviewCount: number;
   isFeatured: boolean;
@@ -26,9 +26,9 @@ export interface PartnerUser {
   phone: string;
   restaurantName: string;
   restaurantId: string | null;
-  subscriptionPackage: 'basic' | 'pro' | 'premium';
-  subscriptionStatus: 'pending' | 'active' | 'expired' | 'cancelled';
-  role: 'owner' | 'manager' | 'staff';
+  subscriptionPackage: "basic" | "pro" | "premium";
+  subscriptionStatus: "pending" | "active" | "expired" | "cancelled";
+  role: "owner" | "manager" | "staff";
 }
 
 interface PartnerAuthState {
@@ -48,7 +48,7 @@ interface PartnerAuthState {
     restaurantAddress?: string;
     restaurantCity?: string;
     cuisine?: string;
-    subscriptionPackage?: 'basic' | 'pro' | 'premium';
+    subscriptionPackage?: "basic" | "pro" | "premium";
   }) => Promise<void>;
   logout: () => Promise<void>;
   loadPartner: () => Promise<void>;
@@ -67,15 +67,22 @@ export const usePartnerAuthStore = create<PartnerAuthState>((set) => ({
       const res = await partnerAuthAPI.login({ email, password });
       const { token, partner, restaurant } = res.data;
 
-      await AsyncStorage.setItem('amble_partner_token', token);
+      await AsyncStorage.setItem("amble_partner_token", token);
       // Remove user token to avoid conflicts
-      await AsyncStorage.removeItem('amble_token');
+      await AsyncStorage.removeItem("amble_token");
 
-      set({ partner, restaurant, token, isAuthenticated: true, isLoading: false });
+      set({
+        partner,
+        restaurant,
+        token,
+        isAuthenticated: true,
+        isLoading: false,
+      });
     } catch (error: any) {
       set({ isLoading: false });
       const message =
-        error.response?.data?.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
+        error.response?.data?.message ||
+        "Đăng nhập thất bại. Vui lòng thử lại.";
       throw new Error(message);
     }
   },
@@ -86,35 +93,42 @@ export const usePartnerAuthStore = create<PartnerAuthState>((set) => ({
       const res = await partnerAuthAPI.register(data);
       const { token, partner, restaurant } = res.data;
 
-      await AsyncStorage.setItem('amble_partner_token', token);
-      await AsyncStorage.removeItem('amble_token');
+      await AsyncStorage.setItem("amble_partner_token", token);
+      await AsyncStorage.removeItem("amble_token");
 
-      set({ partner, restaurant, token, isAuthenticated: true, isLoading: false });
+      set({
+        partner,
+        restaurant,
+        token,
+        isAuthenticated: true,
+        isLoading: false,
+      });
     } catch (error: any) {
       set({ isLoading: false });
       const message =
-        error.response?.data?.message || 'Đăng ký thất bại. Vui lòng thử lại.';
+        error.response?.data?.message || "Đăng ký thất bại. Vui lòng thử lại.";
       throw new Error(message);
     }
   },
 
   logout: async () => {
-  try {
-    await partnerAuthAPI.logout();
-  } catch (e) {}
+    try {
+      await partnerAuthAPI.logout();
+    } catch (e) {}
 
-  await AsyncStorage.removeItem('amble_partner_token');
+    await AsyncStorage.removeItem("amble_partner_token");
 
-  set({
-    partner: null,
-    restaurant: null,
-    isAuthenticated: false,
-  });
-},
+    set({
+      partner: null,
+      restaurant: null,
+      isAuthenticated: false,
+    });
+  },
 
   loadPartner: async () => {
+    let token: string | null = null;
     try {
-      const token = await AsyncStorage.getItem('amble_partner_token');
+      token = await AsyncStorage.getItem("amble_partner_token");
       if (!token) return;
 
       const res = await partnerAuthAPI.getMe();
@@ -124,9 +138,25 @@ export const usePartnerAuthStore = create<PartnerAuthState>((set) => ({
         token,
         isAuthenticated: true,
       });
-    } catch {
-      await AsyncStorage.removeItem('amble_partner_token');
-      set({ partner: null, restaurant: null, token: null, isAuthenticated: false });
+    } catch (error: any) {
+      const status = error?.response?.status;
+
+      // Only clear session when token is invalid/expired.
+      if (status === 401 || status === 403) {
+        await AsyncStorage.removeItem("amble_partner_token");
+        set({
+          partner: null,
+          restaurant: null,
+          token: null,
+          isAuthenticated: false,
+        });
+        return;
+      }
+
+      // Keep local partner session on transient network/server failures.
+      if (token) {
+        set({ token, isAuthenticated: true });
+      }
     }
   },
 }));

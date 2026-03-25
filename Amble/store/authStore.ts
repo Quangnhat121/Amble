@@ -1,6 +1,6 @@
-import { create } from 'zustand';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { authAPI, userAPI } from '../services/api';
+import { create } from "zustand";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { authAPI, userAPI } from "../services/api";
 
 interface User {
   _id: string;
@@ -46,12 +46,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const res = await authAPI.login({ email, password });
       const { token, user } = res.data;
 
-      await AsyncStorage.setItem('amble_token', token);
+      await AsyncStorage.setItem("amble_token", token);
       set({ user, token, isAuthenticated: true, isLoading: false });
     } catch (error: any) {
       set({ isLoading: false });
       const message =
-        error.response?.data?.message || 'Login failed. Please try again.';
+        error.response?.data?.message || "Login failed. Please try again.";
       throw new Error(message);
     }
   },
@@ -62,31 +62,44 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       const res = await authAPI.register(data);
       const { token, user } = res.data;
 
-      await AsyncStorage.setItem('amble_token', token);
+      await AsyncStorage.setItem("amble_token", token);
       set({ user, token, isAuthenticated: true, isLoading: false });
     } catch (error: any) {
       set({ isLoading: false });
       const message =
-        error.response?.data?.message || 'Registration failed. Please try again.';
+        error.response?.data?.message ||
+        "Registration failed. Please try again.";
       throw new Error(message);
     }
   },
 
   logout: async () => {
-    await AsyncStorage.removeItem('amble_token');
+    await AsyncStorage.removeItem("amble_token");
     set({ user: null, token: null, isAuthenticated: false });
   },
 
   loadUser: async () => {
+    let token: string | null = null;
     try {
-      const token = await AsyncStorage.getItem('amble_token');
+      token = await AsyncStorage.getItem("amble_token");
       if (!token) return;
 
       const res = await authAPI.getMe();
       set({ user: res.data.user, token, isAuthenticated: true });
-    } catch {
-      await AsyncStorage.removeItem('amble_token');
-      set({ user: null, token: null, isAuthenticated: false });
+    } catch (error: any) {
+      const status = error?.response?.status;
+
+      // Only clear session when token is invalid/expired.
+      if (status === 401 || status === 403) {
+        await AsyncStorage.removeItem("amble_token");
+        set({ user: null, token: null, isAuthenticated: false });
+        return;
+      }
+
+      // Keep local session on transient network/server failures.
+      if (token) {
+        set({ token, isAuthenticated: true });
+      }
     }
   },
 
@@ -97,7 +110,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       set({ user: res.data.user, isLoading: false });
     } catch (error: any) {
       set({ isLoading: false });
-      const message = error.response?.data?.message || 'Update failed.';
+      const message = error.response?.data?.message || "Update failed.";
       throw new Error(message);
     }
   },

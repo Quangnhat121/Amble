@@ -1,4 +1,4 @@
-const BASE_URL = "http://10.0.2.2:5000/api"; // Android emulator
+const BASE_URL = "https://be-amble-2.onrender.com/api";
 
 export const restaurantApi = {
   async searchRestaurants(params: {

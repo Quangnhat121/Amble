@@ -71,8 +71,7 @@ export const DEFAULT_SESSION: AISession = {
 
 // ─── Gọi Gemini qua BE proxy (key bảo mật trong BE/.env) ───────────────────
 
-const BE_URL = "http://10.0.2.2:5000/api"; // Android emulator
-// const BE_URL = 'http://localhost:5000/api'; // iOS simulator
+const BE_URL = "https://be-amble-2.onrender.com/api";
 
 async function callClaude(
   systemPrompt: string,

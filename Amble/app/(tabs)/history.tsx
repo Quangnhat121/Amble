@@ -25,7 +25,11 @@ const PRIMARY = "#FF6B35";
 type Tab = "active" | "completed" | "cancelled";
 
 const TAB_CONFIG: { id: Tab; label: string; statuses: string[] }[] = [
-  { id: "active", label: "Đang đặt", statuses: ["confirmed", "paid", "draft"] },
+  {
+    id: "active",
+    label: "Đang đặt",
+    statuses: ["pending", "confirmed", "paid", "draft"],
+  },
   { id: "completed", label: "Đã xong", statuses: ["completed"] },
   { id: "cancelled", label: "Đã hủy", statuses: ["cancelled"] },
 ];
@@ -34,6 +38,7 @@ const STATUS_DISPLAY: Record<
   string,
   { label: string; color: string; bg: string }
 > = {
+  pending: { label: "Đang chờ xử lý", color: "#7C2D12", bg: "#FFEDD5" },
   draft: { label: "Chờ xác nhận", color: "#92400E", bg: "#FEF3C7" },
   confirmed: { label: "Đã xác nhận", color: "#065F46", bg: "#D1FAE5" },
   paid: { label: "Đã thanh toán", color: "#1D4ED8", bg: "#DBEAFE" },
@@ -43,7 +48,7 @@ const STATUS_DISPLAY: Record<
 
 export default function BookingHistoryScreen() {
   const router = useRouter();
-  const { user } = useAuthStore();
+  const { user, loadUser } = useAuthStore();
   const insets = useSafeAreaInsets();
 
   const [activeTab, setActiveTab] = useState<Tab>("active");
@@ -53,9 +58,22 @@ export default function BookingHistoryScreen() {
   const [cancelling, setCancelling] = useState<string | null>(null);
 
   const fetchBookings = useCallback(async () => {
-    if (!user?._id) return;
+    let userId = user?._id;
+
+    // Recover auth state after app restart before requesting history.
+    if (!userId) {
+      await loadUser();
+      userId = useAuthStore.getState().user?._id;
+    }
+
+    if (!userId) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
+
     try {
-      const res = await bookingAPI.getUserBookings(user._id);
+      const res = await bookingAPI.getUserBookings(userId);
       setBookings(res.data.bookings || []);
     } catch (err) {
       console.error(err);
@@ -63,7 +81,7 @@ export default function BookingHistoryScreen() {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [user?._id]);
+  }, [user?._id, loadUser]);
 
   useEffect(() => {
     fetchBookings();
@@ -114,7 +132,9 @@ export default function BookingHistoryScreen() {
     const restaurant = item.restaurantId;
     const table = item.tableId;
     const status = STATUS_DISPLAY[item.status] || STATUS_DISPLAY.draft;
-    const canCancel = ["draft", "confirmed", "paid"].includes(item.status);
+    const canCancel = ["pending", "draft", "confirmed", "paid"].includes(
+      item.status,
+    );
 
     return (
       <View style={c.card}>
